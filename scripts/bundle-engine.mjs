@@ -7,7 +7,7 @@ await mkdir(".shader/build", { recursive: true });
 await mkdir("src-tauri/binaries", { recursive: true });
 const target = execFileSync("rustc", ["-vV"], { encoding: "utf8" }).match(
   /host: (.+)/,
-)[1];
+)[1].trim();
 const output = path.resolve(
   "src-tauri/binaries/shader-engine-" +
     target +
@@ -37,7 +37,7 @@ await writeFile(
   }),
 );
 execFileSync(
-  path.resolve("node_modules/node/bin/node"),
+  path.resolve(process.platform === "win32" ? "node_modules/node/bin/node.exe" : "node_modules/node/bin/node"),
   ["--build-sea=.shader/build/sea.json"],
   { stdio: "inherit" },
 );

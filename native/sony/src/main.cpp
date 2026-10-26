@@ -12,7 +12,16 @@
 #include <mutex>
 #include <sstream>
 #include <thread>
+#ifdef _WIN32
+#include <io.h>
+#define fdopen _fdopen
+#define dup _dup
+#define dup2 _dup2
+#define STDOUT_FILENO 1
+#define STDERR_FILENO 2
+#else
 #include <unistd.h>
+#endif
 namespace SDK = SCRSDK;
 using namespace std::chrono_literals;
 std::string hexCode(uint64_t x) {
@@ -26,6 +35,11 @@ void check(SDK::CrError e, const char *operation) {
                              hexCode(e) + ")");
 }
 std::string safe(const char *s) { return s ? std::string(s) : std::string(); }
+#ifdef _WIN32
+std::string safe(const wchar_t *s) {
+  return s ? std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>>().to_bytes(s) : std::string();
+}
+#endif
 std::string label(uint32_t code, const std::map<uint32_t, std::string> &names) {
   auto it = names.find(code);
   if (it == names.end())

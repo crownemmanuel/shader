@@ -37,3 +37,13 @@ Final UI lifecycle check: switching Simple → Advanced → Simple kept the gene
 - Screenshots: `.shader/verification/lighting-link-desktop.png` and `.shader/verification/preset-library.png` (the latter is an isolated UI fixture).
 
 The production StageLight app was not modified or driven, and no physical camera settings were changed. Real production cue delivery/fades and camera/SDI responses still need an on-site integration check. No paid model calls or automatic frame uploads were made.
+
+## Compact monitoring workspace
+
+- Saved the existing application as local Git checkpoint `cb5f799` before changing the layout.
+- TypeScript and frontend production build passed; all 39 automated engine tests passed without skips.
+- Used an isolated fixture with 12 explicitly labeled simulator cameras and an FFmpeg-generated 960 × 540 moving image. At a 1280 × 720 viewport, the monitor measured 647.70 × 364.33 CSS pixels (16:9); expanded view measured 1031.11 × 579.99 (16:9).
+- Verified left/right pane switching, hiding/restoring the camera strip, selecting camera 12 from the compact picker, strip overflow and keeping the selected camera visible. Advanced controls scrolled 597 pixels while the preview stayed at the same position on screen.
+- Expanded preview and Escape return keep the same mounted monitor and continuous generated feed; focus returns to Expand. The assistant remains usable beside the workspace. Fixed its pre-existing effect cleanup error exposed by the UI check.
+- Screenshot: `.shader/verification/compact-workspace.png`. This is generated test video, not a physical camera or DeckLink verification.
+- Rebuilt and opened the native macOS app successfully. Checked the simulator workspace and Expand → Escape return in WKWebView. The packaged app remains open with simulated controls and no physical camera connection.

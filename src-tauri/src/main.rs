@@ -69,6 +69,8 @@ async fn camera_command(
 fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(tauri_plugin_process::init())
         .manage(EngineChild {
             child: Mutex::new(None),
             owned: AtomicBool::new(false),
@@ -114,10 +116,22 @@ fn main() {
                 .shell()
                 .sidecar("shader-engine")?
                 .env(
+                    "SHADER_FFMPEG",
+                    std::env::current_exe()?.with_file_name(if cfg!(target_os = "windows") {
+                        "ffmpeg.exe"
+                    } else {
+                        "ffmpeg"
+                    }),
+                )
+                .env(
                     "SHADER_SONY_BRIDGE",
                     app.path()
                         .resource_dir()?
-                        .join("sony/shader-sony")
+                        .join(if cfg!(target_os = "windows") {
+                            "sony/shader-sony.exe"
+                        } else {
+                            "sony/shader-sony"
+                        })
                         .to_string_lossy()
                         .to_string(),
                 )

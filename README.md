@@ -4,7 +4,7 @@ Tauri desktop foundation for controlling production cameras through one UI, MCP,
 
 ## Run
 
-Requirements: macOS development environment with Xcode command-line tools, Rust, and Node/npm. macOS Apple Silicon is the platform built and inspected here; Windows/Linux source paths are present but not validated.
+Requirements: Node 26/npm, Rust, and either macOS Apple silicon with Xcode command-line tools or Windows x64 with Visual Studio C++ build tools and WebView2. GitHub Actions builds and tests both desktop targets.
 
 ```sh
 npm install
@@ -21,6 +21,10 @@ npm run desktop:build
 ```
 
 A verified debug app is also available after `npm run bundle:engine && npm run tauri -- build --debug --bundles app` at `src-tauri/target/debug/bundle/macos/Shader.app`. Local builds are not Apple-notarized distribution releases.
+
+## Releases and updates
+
+Download signed-update releases from [crownemmanuel/shader](https://github.com/crownemmanuel/shader/releases). Installed Windows and Apple silicon Mac copies check for new versions automatically; install them from **Settings → App updates** after locking camera writes. GitHub Actions builds and publishes version tags. See [the release guide](docs/RELEASES.md) for signing, Sony SDK builds, and `npm run release -- patch`.
 
 Headless engine / browser development:
 

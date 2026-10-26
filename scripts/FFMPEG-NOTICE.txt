@@ -1,0 +1,8 @@
+Shader runs FFmpeg as a separate bundled executable for video capture.
+FFmpeg 9.0.2 is licensed under GNU GPL v3 or later in these builds (x264 enabled).
+License: https://www.gnu.org/licenses/gpl-3.0.html
+FFmpeg source: https://github.com/FFmpeg/FFmpeg/tree/n9.0.2
+x264 source: https://code.videolan.org/videolan/x264
+Build source/configuration: https://ffmpeg.martin-riedl.de/ and https://www.gyan.dev/ffmpeg/builds/
+Pinned upstream binaries and SHA-256 checksums: scripts/fetch-ffmpeg.ts in https://github.com/crownemmanuel/shader
+These projects supply their own copyright notices and licenses. Shader is an independent application.

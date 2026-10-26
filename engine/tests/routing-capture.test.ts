@@ -86,7 +86,7 @@ test("MJPEG parser handles fragmented frames, multiple frames, and oversized inp
   assert.ok(!args.includes("-frames:v"));
 });
 
-test("preview and MCP capture share one input process, retain camera provenance and close on final lease release", async () => {
+test("preview and MCP capture share one input process, retain camera provenance and close on final lease release", { skip: process.platform === "win32" ? "Unix executable fixture uses a shebang; packaged Windows engine is tested separately" : false }, async () => {
   const dir = await mkdtemp(path.join(os.tmpdir(), "shader-video-")),
     old = process.env.SHADER_FFMPEG;
   const executable = path.join(dir, "fake-ffmpeg"),

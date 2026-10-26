@@ -12,3 +12,6 @@ src-tauri/binaries/*
 native/sony/vendor/
 native/sony/build/
 src-tauri/resources/sony/
+
+# Generated Tauri permissions and platform schemas
+src-tauri/gen/

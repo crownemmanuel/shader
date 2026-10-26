@@ -5,7 +5,12 @@ import { promisify } from "node:util";
 import { existsSync } from "node:fs";
 import path from "node:path";
 import { SonyBridge } from "../adapters/sony.js";
-const binary = path.resolve("native/sony/build/shader-sony");
+const binary =
+  process.env.SHADER_SONY_BRIDGE ||
+  path.resolve(
+    "native/sony/build",
+    process.platform === "win32" ? "shader-sony.exe" : "shader-sony",
+  );
 test(
   "native Sony bridge loads the licensed SDK and checks signed, 64-bit, enum and range conversions",
   { skip: !existsSync(binary) },
@@ -19,7 +24,7 @@ test(
   },
 );
 test(
-  "native Sony discovery loads macOS adapter plugins and returns SDK candidates",
+  "native Sony discovery loads platform adapter plugins and returns SDK candidates",
   { skip: !existsSync(binary) },
   async () => {
     const bridge = new SonyBridge(binary);

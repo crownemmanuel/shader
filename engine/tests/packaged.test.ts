@@ -8,7 +8,7 @@ import os from "node:os";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 const binary = path.resolve(
-  `src-tauri/binaries/shader-engine-${process.arch === "arm64" ? "aarch64" : "x86_64"}-${process.platform === "darwin" ? "apple-darwin" : "unknown-linux-gnu"}`,
+  `src-tauri/binaries/shader-engine-${process.arch === "arm64" ? "aarch64" : "x86_64"}-${process.platform === "darwin" ? "apple-darwin" : process.platform === "win32" ? "pc-windows-msvc" : "unknown-linux-gnu"}${process.platform === "win32" ? ".exe" : ""}`,
 );
 test(
   "packaged engine boots without node_modules and serves its packaged MCP bridge",

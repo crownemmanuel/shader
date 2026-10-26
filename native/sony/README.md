@@ -1,6 +1,6 @@
 # Sony Camera Remote SDK bridge
 
-The native C++ bridge is implemented, linked to **Sony Camera Remote SDK 2.02.00**, and packaged into the macOS app. The user authorized acceptance and local installation of Sony's license on 26 October 2026. The original SDK stays under ignored `vendor/`; it is not source code for this project.
+The native C++ bridge is implemented, linked to **Sony Camera Remote SDK 2.02.00**, and packaged into the Windows and macOS apps. The user authorized acceptance and local installation of Sony's license on 26 October 2026. The original SDK stays under ignored `vendor/`; it is not source code for this project.
 
 ## Build
 
@@ -8,9 +8,9 @@ The native C++ bridge is implemented, linked to **Sony Camera Remote SDK 2.02.00
 npm run build:sony
 ```
 
-Requires the official Mac SDK unpacked as `vendor/RemoteCli` (or `SONY_SDK_ROOT` pointing to that extracted sample directory), Xcode command-line tools and the SDK readme at `vendor/sdk/Camera_Remote_SDK_Readme_v2.02.00.pdf`. The script compiles our bridge and stages runtime resources in `src-tauri/resources/sony/`. Sony's macOS adapters must live at `Contents/Frameworks/CrAdapter` relative to the bridge directory; simply placing `CrAdapter` beside the executable fails with SDK error `0x8703`.
+Downloads the official platform SDK archive pinned in `sdk.json`, verifies its SHA-256 and extracts it under ignored `vendor/`. Requires Xcode command-line tools on macOS or an x64 MSVC developer environment on Windows. `SONY_SDK_ROOT` can point to an already extracted sample; use `SONY_SDK_README` for its PDF when it is stored elsewhere. The script compiles our bridge and stages runtime resources in `src-tauri/resources/sony/`. Sony's macOS adapters must live at `Contents/Frameworks/CrAdapter` relative to the bridge directory; simply placing `CrAdapter` beside the executable fails with SDK error `0x8703`.
 
-The app finds its packaged bridge automatically. Headless development finds `native/sony/build/shader-sony`. `SHADER_SONY_BRIDGE` overrides it with an absolute executable path. The build currently targets macOS; Windows/Linux SDK libraries and packaging remain a porting task.
+The app finds its packaged bridge automatically. Headless development finds `native/sony/build/shader-sony`. `SHADER_SONY_BRIDGE` overrides it with an absolute executable path. Windows builds compile with Unicode SDK strings and stage `Cr_Core.dll` plus the `CrAdapter` plugin folder next to `shader-sony.exe`. macOS builds retain their SDK adapter layout. Windows USB use may require Sony’s supplied USB driver. Linux packaging remains a porting task.
 
 ## Native implementation
 

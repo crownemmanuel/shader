@@ -15,3 +15,23 @@ The operator selects a camera, sees its routed picture and On Air status, then u
 Tokens: charcoal workspace #222426, control surface #292b2e, monitor #151719, border #414448, primary text #edf0f2, secondary #b0b5bb, warm selection #ecc38b. Red plus “ON AIR” text marks the selected program route. Color in sliders and wheels conveys direction. System font, 11–13 px secondary/control labels, 18 px Simple headings; 8 px radii, 12–24 px spacing. Keep assistant collapsed initially so preview and controls have room.
 
 Interaction review: sliders support keyboard arrows; wheel controls support arrows and separate numeric fields. Apply buttons retain stale-revision protection. Simple commits on release/key-up. Unknown video shows a truthful empty state; signal loss labels the retained frame. Settings owns camera/capture/ATEM mapping and per-camera exposure limits. Live preview and snapshots share one source process.
+
+## Compact monitoring workspace
+
+Keep the selected camera's picture visible throughout shading. Use a horizontal, scrollable camera strip below the toolbar, then a two-pane workspace: a true 16:9 monitor on the left and controls on the right. The controls scroll independently. A layout menu swaps the two panes and hides/shows the camera strip; selections persist locally. An expanded preview uses the same mounted monitor, with Escape to return. Narrow workspaces stack the preview above the scrollable controls.
+
+```
+Toolbar: Shader                         Presets  Lighting  Discover  Assistant  Settings
+Cameras: [1 Face · On Air] [2 Wide] [3 Sony] …                                  [+]
+Camera name / live status                                      Read camera  Layout
+┌──────────────────────────────┬─────────────────────────────────────────────────┐
+│                              │ Simple / Advanced              Write access     │
+│        16:9 preview          │ Brightness                                      │
+│                              │ Warmth                                          │
+│ Input  /  Capture / Expand    │ Tint                                            │
+└──────────────────────────────┴─────────────────────────────────────────────────┘
+```
+
+Reuse charcoal #222426, surface #292b2e, monitor #151719, border #414448, primary text #edf0f2 and muted text #b0b5bb. Keep the existing warm accent for selection, red plus text for On Air, and directional color on shading controls. System type remains 12–13 px for controls, 16–18 px for the camera heading. Reduce oversized section spacing rather than shrinking hit targets or hiding supported controls. Simple sections use separators instead of nested cards. On wide panes, Advanced controls form a responsive grid; narrow panes use one column.
+
+Review: the earlier stacked monitor consumed the same vertical space needed by the sliders, and hard-coded heights overrode its aspect ratio. Removing the permanent camera sidebar and separating scroll areas directly addresses this brief. No decorative scopes or extra status panels are introduced. Camera selection, signal/tally status, video-input mapping, and write locks stay explicit.

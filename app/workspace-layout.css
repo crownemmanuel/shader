@@ -1,0 +1,715 @@
+/* Compact monitoring workspace. Video geometry is independent of control scrolling. */
+.app-toolbar {
+  height: 54px;
+  min-height: 54px;
+  padding: 0 18px;
+  gap: 14px;
+}
+.brand {
+  min-width: 130px;
+}
+.brand strong {
+  font-size: 19px;
+}
+.toolbar-actions {
+  gap: 6px;
+}
+.workspace {
+  grid-template-columns: minmax(0, 1fr);
+}
+.workspace.with-assistant {
+  grid-template-columns: minmax(0, 1fr) 310px;
+}
+.assistant-host {
+  display: grid;
+  min-height: 0;
+  min-width: 0;
+}
+.assistant-host .assistant {
+  display: flex;
+  min-height: 0;
+}
+.console {
+  max-width: none;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 12px 18px 16px;
+  container-name: camera-console;
+  container-type: inline-size;
+}
+.console > .banner {
+  flex-shrink: 0;
+}
+.camera-heading {
+  flex-shrink: 0;
+  margin-bottom: 12px;
+  min-height: 42px;
+}
+.camera-heading > div {
+  min-width: 0;
+}
+.camera-heading h1 {
+  font-size: 17px;
+  gap: 10px;
+}
+.camera-heading .selected-camera-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.camera-heading .breadcrumb {
+  margin-bottom: 4px;
+  font-size: 11px;
+}
+.camera-heading .state-label {
+  display: inline-flex;
+  flex-shrink: 0;
+  font-size: 11px;
+}
+.camera-heading > .quiet {
+  font-size: 12px;
+  gap: 7px;
+  flex-shrink: 0;
+}
+.camera-heading select {
+  max-width: min(45vw, 360px);
+  font-size: 14px;
+  padding: 6px 10px;
+}
+.shading-workspace {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1.12fr) minmax(370px, 1fr);
+  grid-template-areas: "preview controls";
+  gap: 18px;
+  container-name: shading-area;
+  container-type: size;
+}
+.shading-workspace.controls-left {
+  grid-template-columns: minmax(370px, 1fr) minmax(0, 1.12fr);
+  grid-template-areas: "controls preview";
+}
+.preview-dock {
+  grid-area: preview;
+  min-width: 0;
+  align-self: start;
+  justify-self: center;
+  width: 100%;
+  max-width: min(100%, calc((100cqh - 88px) * 16 / 9));
+}
+.preview-portal-host {
+  display: contents;
+}
+.preview-pane {
+  min-width: 0;
+  width: 100%;
+}
+.preview-heading {
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.preview-heading > span {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.preview-heading button {
+  font-size: 12px;
+}
+.monitor {
+  width: 100%;
+  height: auto;
+  min-height: 0;
+  max-height: none;
+  aspect-ratio: 16 / 9;
+  flex-shrink: 0;
+}
+.monitor img {
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.monitor-empty {
+  position: absolute;
+  inset: 0;
+  padding: 30px 18px;
+  justify-content: center;
+  gap: 10px;
+}
+.monitor-empty .framing {
+  height: 35px;
+  width: 52px;
+  margin: 0;
+}
+.monitor-empty p {
+  max-width: 330px;
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.45;
+}
+.monitor-empty button {
+  min-height: 36px;
+  margin-top: 0;
+}
+.monitor-tag {
+  top: 10px;
+  left: 10px;
+  font-size: 11px;
+}
+.on-air-badge {
+  top: 10px;
+  right: 10px;
+}
+.monitor-timestamp {
+  bottom: 10px;
+  right: 10px;
+  max-width: calc(100% - 20px);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.monitor-controls {
+  min-height: 44px;
+  margin: 4px 0 0;
+  gap: 6px;
+}
+.monitor-controls button {
+  font-size: 12px;
+  min-width: 0;
+}
+.monitor-controls > .quiet {
+  max-width: 60%;
+}
+.monitor-controls svg {
+  flex-shrink: 0;
+}
+.source-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.controls-pane {
+  grid-area: controls;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  overflow: hidden;
+  container-name: controls-pane;
+  container-type: inline-size;
+}
+.controls-toolbar {
+  flex-shrink: 0;
+  padding: 10px 14px 0;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+}
+.controls-pane .mode-bar {
+  margin: 0;
+  gap: 8px;
+}
+.controls-pane .view-switch {
+  padding: 2px;
+}
+.controls-pane .view-switch button {
+  min-width: 92px;
+  min-height: 32px;
+  padding: 5px 16px;
+}
+.controls-pane .write-bar {
+  flex-direction: row;
+  align-items: center;
+  padding: 8px 0;
+  gap: 8px;
+  font-size: 11px;
+  min-height: 34px;
+}
+.controls-pane .write-bar button {
+  padding: 4px 6px;
+  min-height: 32px;
+}
+.controls-pane .live-note {
+  font-size: 11px;
+  margin: 0 0 8px;
+}
+.controls-pane .controls-heading {
+  margin-top: 7px;
+  border: 0;
+}
+.controls-pane .tabs {
+  gap: 5px;
+  flex: 1;
+  min-width: 0;
+  overflow-x: auto;
+}
+.controls-pane .tabs button {
+  padding: 9px 7px;
+  font-size: 12px;
+  min-height: 36px;
+}
+.controls-pane .control-count {
+  display: none;
+}
+.controls-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 0 14px 12px;
+  scrollbar-gutter: stable;
+  overscroll-behavior: contain;
+}
+.controls-scroll:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -3px;
+}
+.controls-pane .simple-controls {
+  grid-template-columns: minmax(0, 1fr);
+  margin: 0;
+  gap: 0;
+}
+.controls-pane .simple-card {
+  padding: 13px 0 10px;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  border-radius: 0;
+  background: transparent;
+}
+.controls-pane .simple-title {
+  margin-bottom: 10px;
+  gap: 9px;
+}
+.controls-pane .simple-title h2 {
+  font-size: 16px;
+}
+.controls-pane .simple-title p {
+  display: none;
+}
+.controls-pane .simple-title svg {
+  width: 17px;
+  height: 17px;
+}
+.controls-pane .visual-slider {
+  margin: 8px 0 10px;
+}
+.controls-pane .visual-slider input[type="range"] {
+  margin: 4px 0 0;
+}
+.controls-pane .exposure-path {
+  margin-top: 8px;
+  gap: 7px;
+}
+.controls-pane .exposure-path > span:not(:nth-child(2)) {
+  border: 0;
+  padding: 2px 0;
+}
+.controls-pane .helper {
+  font-size: 11px;
+  line-height: 1.5;
+  margin: 6px 0;
+}
+.controls-pane .color-cast {
+  margin-top: 7px;
+  padding-top: 7px;
+  border-top: 0;
+}
+.controls-pane .color-cast summary {
+  min-height: 28px;
+  padding: 4px 0;
+}
+.controls-pane .simple-footer {
+  padding-top: 10px;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.controls-pane .simple-footer button {
+  font-size: 11px;
+  min-height: 34px;
+}
+.controls-pane .simple-footer .quiet {
+  padding-left: 0;
+}
+.controls-pane .controls-grid {
+  padding-top: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 195px), 1fr));
+  gap: 10px;
+  align-items: start;
+}
+.controls-pane .control {
+  padding: 12px;
+  background: #25272a;
+}
+.controls-pane .control.visual-control {
+  padding: 12px;
+  min-height: 0;
+}
+.controls-pane .control-title h3 {
+  font-size: 13px;
+}
+.controls-pane .control-title {
+  gap: 6px;
+}
+.controls-pane .color-wheel {
+  width: min(150px, 100%);
+  height: auto;
+  aspect-ratio: 1;
+  margin: 12px auto 8px;
+}
+.controls-pane .wheel-caption {
+  margin-bottom: 12px;
+  font-size: 11px;
+}
+.controls-pane .fine-tune {
+  margin-top: 8px;
+}
+.controls-pane .control-bottom {
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.controls-pane .ptz-toolbar {
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+.console > .empty-workspace {
+  overflow: auto;
+  flex: 1;
+  min-height: 0;
+}
+.statusbar {
+  flex-shrink: 0;
+  min-height: 30px;
+  padding: 0 16px;
+}
+.statusbar .status-activity {
+  min-height: 26px;
+  padding: 2px 6px;
+  font-size: 11px;
+}
+.statusbar > span {
+  min-width: 0;
+}
+
+/* Camera selection is horizontal, with explicit overflow controls and keyboard focus. */
+.camera-strip {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 7px 14px;
+  min-height: 64px;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--line);
+  background: #25272a;
+}
+.camera-strip-label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-right: 8px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.camera-strip-label small {
+  font-variant-numeric: tabular-nums;
+}
+.camera-strip-items {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow-x: auto;
+  padding: 2px;
+  scrollbar-width: none;
+}
+.camera-strip-items::-webkit-scrollbar {
+  display: none;
+}
+.camera-chip {
+  display: flex;
+  align-items: center;
+  text-align: left;
+  justify-content: flex-start;
+  flex: 0 0 auto;
+  max-width: 210px;
+  min-width: 142px;
+  min-height: 44px;
+  padding: 6px 11px;
+  gap: 9px;
+  background: transparent;
+  border-color: transparent;
+}
+.camera-chip.selected {
+  background: #3b3d40;
+  border-color: #8f8371;
+}
+.camera-chip.on-air {
+  border-color: #c5525d;
+}
+.camera-chip.on-air small {
+  color: #ffb2ba;
+}
+.camera-chip-number {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  font-size: 14px;
+  min-width: 16px;
+}
+.camera-chip-text {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+.camera-chip-text strong {
+  font-size: 12px;
+  font-weight: 550;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.camera-chip-text small {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+}
+.camera-strip-empty {
+  color: var(--muted);
+  font-size: 12px;
+  padding: 8px;
+}
+.camera-strip .strip-scroll,
+.camera-strip .add-camera-chip {
+  width: 36px;
+  min-height: 44px;
+  flex-shrink: 0;
+}
+.strip-scroll:disabled {
+  opacity: 0.2;
+}
+
+.workspace-layout-menu {
+  position: relative;
+}
+.workspace-layout-menu > summary {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 11px;
+  min-height: 36px;
+  border-radius: 6px;
+  border: 1px solid #50545b;
+  color: var(--text);
+  font-size: 12px;
+  list-style: none;
+  background: #35383c;
+}
+.workspace-layout-menu > summary::-webkit-details-marker {
+  display: none;
+}
+.workspace-layout-menu > summary:hover {
+  background: #44484d;
+}
+.workspace-layout-menu[open] > summary {
+  border-color: var(--accent);
+}
+.layout-popover {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  width: 250px;
+  padding: 16px;
+  border: 1px solid #64696f;
+  border-radius: 9px;
+  background: var(--panel);
+  box-shadow: 0 10px 30px #0007;
+  z-index: 30;
+}
+.layout-label {
+  font-size: 12px;
+  color: var(--muted);
+}
+.layout-choices {
+  display: flex;
+  gap: 6px;
+  margin: 9px 0 16px;
+}
+.layout-choices button {
+  flex: 1;
+  min-height: 36px;
+}
+.layout-choices button[aria-pressed="true"] {
+  border-color: var(--accent);
+  background: #4a4239;
+}
+.layout-popover label {
+  display: flex;
+  gap: 9px;
+  align-items: center;
+  font-size: 12px;
+}
+.layout-popover p {
+  margin: 14px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+/* A native top-layer dialog escapes pane containment without duplicating the preview. */
+dialog.expanded-preview-dialog {
+  inset: 0;
+  margin: 0;
+  padding: 18px 24px;
+  width: 100vw;
+  max-width: none;
+  height: 100dvh;
+  max-height: none;
+  border: 0;
+  border-radius: 0;
+  background: #111315;
+  overflow: hidden;
+}
+dialog.expanded-preview-dialog::backdrop {
+  background: #111315;
+}
+.preview-pane.expanded {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.preview-pane.expanded > .monitor,
+.preview-pane.expanded > .preview-heading,
+.preview-pane.expanded > .monitor-controls {
+  width: min(100%, calc((100dvh - 140px) * 16 / 9));
+}
+.preview-pane.expanded > .preview-heading {
+  min-height: 44px;
+}
+
+@container camera-console (max-width: 760px) {
+  .shading-workspace,
+  .shading-workspace.controls-left {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+    grid-template-areas: "preview" "controls";
+    gap: 10px;
+  }
+  .preview-dock {
+    width: min(100%, 400px, calc((100dvh - 440px) * 16 / 9));
+    max-width: none;
+  }
+  .preview-heading {
+    min-height: 32px;
+  }
+  .preview-heading button {
+    min-height: 30px;
+    padding: 4px 8px;
+  }
+  .monitor-controls {
+    min-height: 34px;
+  }
+  .monitor-controls button {
+    min-height: 30px;
+    font-size: 11px;
+    padding: 4px 7px;
+  }
+  .monitor-empty .framing {
+    display: none;
+  }
+  .monitor-empty p {
+    display: none;
+  }
+  .monitor-empty {
+    padding: 25px 8px 8px;
+    gap: 6px;
+  }
+  .monitor-empty button {
+    min-height: 30px;
+  }
+  .monitor-tag {
+    top: 7px;
+    left: 7px;
+    font-size: 10px;
+    padding: 3px 5px;
+  }
+}
+@container controls-pane (min-width: 620px) {
+  .controls-pane .simple-controls {
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+  }
+}
+@media (max-width: 1200px) {
+  .toolbar-center {
+    display: none;
+  }
+  .workspace.with-assistant {
+    grid-template-columns: minmax(0, 1fr) 290px;
+  }
+}
+@media (max-width: 780px) {
+  .app-toolbar {
+    padding: 0 10px;
+    gap: 8px;
+  }
+  .app-toolbar .brand {
+    min-width: 0;
+  }
+  .app-toolbar .brand-mark,
+  .app-toolbar .version {
+    display: none;
+  }
+  .toolbar-actions {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+  .workspace.with-assistant {
+    grid-template-columns: minmax(0, 1fr) 260px;
+  }
+  .camera-strip {
+    padding: 6px;
+  }
+  .camera-strip-label {
+    display: none;
+  }
+  .console {
+    padding: 8px 10px;
+  }
+  .camera-heading .state-label {
+    font-size: 11px;
+  }
+}
+@media (prefers-contrast: more) {
+  .camera-chip.selected,
+  .layout-popover,
+  .controls-pane {
+    border-color: #aaa;
+  }
+  .camera-chip.on-air {
+    border-color: #ff8994;
+  }
+  .camera-chip-text small,
+  .layout-label {
+    color: #e1e4e7;
+  }
+}
+
+.compact-camera-picker {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}

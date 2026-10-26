@@ -2,15 +2,22 @@ import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
 import { createInterface } from "node:readline";
 import path, { isAbsolute } from "node:path";
 import { existsSync } from "node:fs";
-export const sonyBridgePath = () =>
-  process.env.SHADER_SONY_BRIDGE ||
-  [
-    path.resolve("native/sony/build/shader-sony"),
+export const sonyBridgePath = () => {
+  const executable =
+    process.platform === "win32" ? "shader-sony.exe" : "shader-sony";
+  return [
+    process.env.SHADER_SONY_BRIDGE,
+    path.resolve("native/sony/build", executable),
+    path.resolve(path.dirname(process.execPath), "sony", executable),
     path.resolve(
       path.dirname(process.execPath),
-      "../Resources/sony/shader-sony",
+      "../Resources/sony",
+      executable,
     ),
-  ].find((p) => existsSync(p));
+  ].find(
+    (candidate): candidate is string => !!candidate && existsSync(candidate),
+  );
+};
 import { z } from "zod";
 import type { Adapter, Camera, Connection, Control, Value } from "../types.js";
 /** Process boundary: Sony's separately licensed SDK stays out of the webview and npm bundle. */

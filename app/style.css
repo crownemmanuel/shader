@@ -402,7 +402,6 @@ small {
   overflow: hidden;
   border: 1px solid #3d4b57;
   border-radius: 7px;
-  min-height: 250px;
 }
 .monitor img {
   width: 100%;
@@ -1233,9 +1232,6 @@ details form {
   .monitor-empty button {
     min-height: 30px;
   }
-  .monitor {
-    min-height: 260px;
-  }
 }
 @media (max-width: 1000px) {
   .toolbar-center {
@@ -1347,11 +1343,6 @@ details form {
   } /* Broadcast console intentionally keeps a stable dark monitor surround. */
 }
 
-/* Keep shading controls visible below a bounded diagnostic monitor. */
-.monitor {
-  height: clamp(250px, 34vh, 340px);
-  aspect-ratio: auto;
-}
 .monitor img {
   object-fit: contain;
 }
@@ -1415,7 +1406,6 @@ button.quiet {
   max-width: 1600px;
 }
 .monitor {
-  height: clamp(230px, 29vh, 340px);
   position: relative;
   border: 1px solid #44484b;
   border-radius: 8px;

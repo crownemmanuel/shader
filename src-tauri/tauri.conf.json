@@ -1,12 +1,12 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "Shader",
-  "version": "0.1.0",
+  "version": "../package.json",
   "identifier": "studio.shader.desktop",
   "build": {
     "beforeDevCommand": "npm run bundle:engine && npm run dev",
     "devUrl": "http://127.0.0.1:1420",
-    "beforeBuildCommand": "npm run build",
+    "beforeBuildCommand": "node scripts/fetch-ffmpeg.ts && npm run build",
     "frontendDist": "../dist"
   },
   "app": {
@@ -26,8 +26,11 @@
   },
   "bundle": {
     "active": true,
-    "targets": ["app"],
-    "externalBin": ["binaries/shader-engine"],
+    "targets": "all",
+    "externalBin": [
+      "binaries/shader-engine",
+      "binaries/ffmpeg"
+    ],
     "macOS": {
       "minimumSystemVersion": "12.1",
       "infoPlist": "Info.plist"
@@ -40,7 +43,20 @@
       "icons/icon.ico"
     ],
     "resources": {
-      "resources/sony/": "sony/"
+      "resources/sony/": "sony/",
+      "../scripts/FFMPEG-NOTICE.txt": "FFMPEG-NOTICE.txt"
+    },
+    "createUpdaterArtifacts": true
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEY4NEY1REY0NUM3MkY0NUMKUldSYzlISmM5RjFQK05tMXRKNDgyUCtqMmtPMkIyeUZJd2w3ZVUveWJhQTByVitoZFpTam9PS20K",
+      "endpoints": [
+        "https://github.com/crownemmanuel/shader/releases/latest/download/latest.json"
+      ],
+      "windows": {
+        "installMode": "passive"
+      }
     }
   }
 }

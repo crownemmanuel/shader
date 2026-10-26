@@ -51,3 +51,11 @@ A frame includes camera ID, source ID, capture timestamp and control revision ob
 - [Sony exposure guidance](https://www.sony.com/electronics/support/cameras-camcorders/articles/00025973): aperture, shutter and ISO have different consequences. Iris-first with optional aperture preservation is this app’s operating policy, not a universal camera rule.
 - Sony Camera Remote SDK 2.02, locally installed API reference: `dp_FNumber`, `dp_IsoSensitivity`, `dp_ShutterSpeed`, `dp_Colortemp`, `dp_ColorTuningGM`. Scope and encodings are model dependent.
 - [PTZOptics exposure commands](https://docs.ptzoptics.com/dev/visca-api/exposure/) and [inquiry replies](https://docs.ptzoptics.com/dev/visca-api/inquiries/): temperature index, mode and differing write/read packet representations. Use the exact connected model’s capabilities before expanding the exposure recipe.
+
+## Arrange the monitoring workspace
+
+Cameras appear in a horizontally scrolling strip. Select a camera to keep its 16:9 picture beside the controls. The controls scroll independently, so the image stays visible during adjustments.
+
+Open **Layout** to put controls on the left or right, or hide the camera strip. When hidden, the camera name becomes a selector, with an Add camera button beside it. These layout preferences are remembered on this computer. Narrow workspaces place the preview above the controls.
+
+Use **Expand** above the picture for a larger view. Press **Escape** or **Return to controls** to return. Expanding keeps the existing video preview running.

@@ -1,12 +1,10 @@
 import { readFile, writeFile, mkdir, cp, readdir, rm } from "node:fs/promises";
 import { execFileSync } from "node:child_process";
 import path from "node:path";
+import { prepareSdk } from "./fetch-sdk.mjs";
 const root = path.resolve("native/sony"),
-  sdk = process.env.SONY_SDK_ROOT || path.join(root, "vendor/RemoteCli");
-if (process.platform !== "darwin")
-  throw new Error(
-    "This build script currently targets macOS. Port the library paths for Windows/Linux.",
-  );
+  sdk = await prepareSdk();
+const windows = process.platform === "win32";
 const out = path.join(root, "build");
 await mkdir(out, { recursive: true });
 let generated = "#pragma once\n#include <map>\n#include <string>\n";
@@ -32,51 +30,98 @@ for (const [file, prefix, fn] of [
 }
 await writeFile(path.join(out, "names.hpp"), generated);
 await cp(path.join(sdk, "external/crsdk"), out, { recursive: true });
-await cp(
-  path.join(sdk, "external/crsdk/CrAdapter"),
-  path.join(out, "Contents/Frameworks/CrAdapter"),
-  { recursive: true },
-);
-execFileSync(
-  "clang++",
-  [
-    "-std=c++17",
-    "-O2",
-    "-Wall",
-    "-Wextra",
-    "-Wno-unused-parameter",
-    "-Wno-deprecated-declarations",
-    "-mmacosx-version-min=12.1",
-    "-I" + path.join(sdk, "app/CRSDK"),
-    "-I" + path.join(root, "third_party"),
-    "-I" + out,
-    path.join(root, "src/main.cpp"),
-    "-L" + out,
-    "-lCr_Core",
-    "-Wl,-rpath,@executable_path",
-    "-o",
-    path.join(out, "shader-sony"),
-  ],
-  { stdio: "inherit" },
-);
-// Keep Sony's supplied libraries unchanged; sign our bridge for local execution.
-execFileSync(
-  "codesign",
-  ["--force", "--sign", "-", path.join(out, "shader-sony")],
-  { stdio: "inherit" },
-);
+if (!windows)
+  await cp(
+    path.join(sdk, "external/crsdk/CrAdapter"),
+    path.join(out, "Contents/Frameworks/CrAdapter"),
+    { recursive: true },
+  );
+if (windows) {
+  execFileSync(
+    "cl.exe",
+    [
+      "/nologo",
+      "/std:c++17",
+      "/EHsc",
+      "/O2",
+      "/MT",
+      "/utf-8",
+      "/DUNICODE",
+      "/D_UNICODE",
+      "/D_CRT_SECURE_NO_WARNINGS",
+      "/DNOMINMAX",
+      "/I" + path.join(sdk, "app/CRSDK"),
+      "/I" + path.join(root, "third_party"),
+      "/I" + out,
+      path.join(root, "src/main.cpp"),
+      "/Fo" + path.join(out, "shader-sony.obj"),
+      "/Fe" + path.join(out, "shader-sony.exe"),
+      "/link",
+      "/LIBPATH:" + out,
+      "Cr_Core.lib",
+    ],
+    { stdio: "inherit" },
+  );
+} else {
+  execFileSync(
+    "clang++",
+    [
+      "-std=c++17",
+      "-O2",
+      "-Wall",
+      "-Wextra",
+      "-Wno-unused-parameter",
+      "-Wno-deprecated-declarations",
+      "-mmacosx-version-min=12.1",
+      "-I" + path.join(sdk, "app/CRSDK"),
+      "-I" + path.join(root, "third_party"),
+      "-I" + out,
+      path.join(root, "src/main.cpp"),
+      "-L" + out,
+      "-lCr_Core",
+      "-Wl,-rpath,@executable_path",
+      "-o",
+      path.join(out, "shader-sony"),
+    ],
+    { stdio: "inherit" },
+  );
+  // Keep Sony's supplied libraries unchanged; sign our bridge for local execution.
+  execFileSync(
+    "codesign",
+    ["--force", "--sign", "-", path.join(out, "shader-sony")],
+    { stdio: "inherit" },
+  );
+}
+if (windows && process.env.VCToolsRedistDir) {
+  const runtimeRoot = path.join(process.env.VCToolsRedistDir, "x64");
+  for (const directory of await readdir(runtimeRoot)) {
+    if (!/^Microsoft\.VC.*\.CRT$/.test(directory)) continue;
+    for (const file of await readdir(path.join(runtimeRoot, directory))) {
+      if (file.endsWith(".dll"))
+        await cp(path.join(runtimeRoot, directory, file), path.join(out, file));
+    }
+  }
+}
 console.log("Built native Sony SDK bridge at " + out);
 const resource = path.resolve("src-tauri/resources/sony");
 await rm(resource, { recursive: true, force: true });
 await mkdir(resource, { recursive: true });
 for (const file of await readdir(out)) {
-  if (file.endsWith(".dylib") || file === "Contents" || file === "shader-sony")
+  if (
+    file.endsWith(".dylib") ||
+    file.endsWith(".dll") ||
+    file === "CrAdapter" ||
+    file === "Contents" ||
+    file === "shader-sony" ||
+    file === "shader-sony.exe"
+  )
     await cp(path.join(out, file), path.join(resource, file), {
       recursive: true,
     });
 }
 await cp(
-  path.join(root, "vendor/sdk/Camera_Remote_SDK_Readme_v2.02.00.pdf"),
+  process.env.SONY_SDK_README ||
+    path.join(sdk, "Camera_Remote_SDK_Readme_v2.02.00.pdf"),
   path.join(resource, "Sony_SDK_Readme.pdf"),
 );
 await writeFile(

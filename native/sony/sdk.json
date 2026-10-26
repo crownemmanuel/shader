@@ -1,0 +1,11 @@
+{
+  "version": "2.02.00",
+  "darwin": {
+    "url": "https://di.update.sony.net/NEX/Uhfc28896b/CrSDK_v2.02.00_20260610a_Mac.zip",
+    "sha256": "572a5e6da8c190e6fb9a82377153d87ba3e53b4de24e52830365e1a88198ad41"
+  },
+  "win32": {
+    "url": "https://di.update.sony.net/NEX/Uhfc28896b/CrSDK_v2.02.00_20260610a_Win64.zip",
+    "sha256": "4d4cc0bee7fdd60e1e947bfa7a524cbfb5550465ceccc8647eb7b7cdc383ef77"
+  }
+}
