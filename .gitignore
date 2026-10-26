@@ -15,3 +15,7 @@ src-tauri/resources/sony/
 
 # Generated Tauri permissions and platform schemas
 src-tauri/gen/
+
+# DeckLink helper build products (redistributable SDK interfaces are tracked)
+native/decklink/build/
+src-tauri/resources/decklink/

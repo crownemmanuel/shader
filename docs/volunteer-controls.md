@@ -26,11 +26,11 @@ Unsupported controls are disabled or remain in Advanced. The engine does not sil
 
 In Settings, choose each camera’s ATEM switcher, input and audience M/E program bus. The same mapping works for Sony and PTZOptics. Tally follows visible program/preview inputs, including keyers and transitions using the ATEM connection library’s visibility calculation. An aux-only assignment is not labelled On Air. A missing/disconnected switcher or missing bus/input produces **unknown** tally.
 
-Choose the capture subdevice carrying that camera’s physical SDI feed. An eight-input DeckLink must expose the relevant capture subdevices under its Desktop Video profile; register each separately using its enumerated device name and, when needed, input format code. Mapping does not reroute an ATEM output and cannot verify that someone plugged the expected camera into the selected port.
+Choose the capture subdevice carrying that camera’s physical SDI feed. An eight-input DeckLink must expose the relevant capture subdevices under its Desktop Video profile; use Find video inputs to discover each separately. On Windows the native helper shows Quad 2 connector labels and supported video formats; choose automatic detection or a matching manual format. Mapping does not reroute an ATEM output and cannot verify that someone plugged the expected camera into the selected port.
 
 The selected camera starts a continuous 960-pixel-wide JPEG preview at 8 fps. Preview and MCP snapshots share a capture process for the mapped source. Snapshot requests wait for a new frame; they do not open a competing DeckLink handle. Stale signal is labelled. Preview leases expire when clients disappear and are closed when changing cameras or input mappings.
 
-This is a monitoring/agent feed, not a calibrated grading monitor or a full-frame-rate recording pipeline. The local FFmpeg build lacks DeckLink; physical DeckLink use needs Blackmagic Desktop Video and a DeckLink-enabled FFmpeg on the capture computer (`SHADER_FFMPEG` can select it).
+This is a monitoring/agent feed, not a calibrated grading monitor or a full-frame-rate recording pipeline. Windows uses the packaged native DeckLink helper and requires Blackmagic Desktop Video on the capture computer. Release the input from vMix or other capture software before opening it in Shader. Other platforms need a DeckLink-enabled FFmpeg (`SHADER_FFMPEG` can select it). Physical Quad 2 capture remains to be verified.
 
 ## MCP / internal assistant
 

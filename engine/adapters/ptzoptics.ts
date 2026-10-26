@@ -157,6 +157,81 @@ const specs: {
       { label: "Bright", value: 13 },
     ],
   },
+  // Exposure positions are native VISCA indexes (higher = brighter); the
+  // f-stop/dB each index means varies by camera model, so no units are claimed.
+  {
+    id: "iris",
+    label: "Iris position",
+    group: "Exposure",
+    code: 0x4b,
+    max: 0x11,
+    note: "Requires Manual or Iris priority exposure. 0 = closed.",
+  },
+  {
+    id: "gain",
+    label: "Gain position",
+    group: "Exposure",
+    code: 0x4c,
+    max: 0x0f,
+    note: "Requires Manual exposure.",
+  },
+  {
+    id: "gain_limit",
+    label: "Gain limit",
+    group: "Exposure",
+    code: 0x2c,
+    max: 0x0f,
+    style: "byte",
+    note: "Highest gain position auto exposure and Simple brightness may use.",
+  },
+  {
+    id: "shutter",
+    label: "Shutter position",
+    group: "Exposure",
+    code: 0x4a,
+    max: 0x15,
+    note: "Requires Manual or Shutter priority exposure.",
+  },
+  {
+    id: "bright",
+    label: "Bright level",
+    group: "Exposure",
+    code: 0x4d,
+    max: 0x1f,
+    note: "Requires Bright exposure mode.",
+  },
+  {
+    id: "exposure_compensation_mode",
+    label: "Exposure compensation",
+    group: "Exposure",
+    code: 0x3e,
+    max: 3,
+    style: "byte",
+    options: [
+      { label: "On", value: 2 },
+      { label: "Off", value: 3 },
+    ],
+  },
+  {
+    id: "exposure_compensation",
+    label: "Exposure compensation level",
+    group: "Exposure",
+    code: 0x4e,
+    max: 0x0e,
+    note: "7 = neutral. Applies in Auto, Shutter priority and Iris priority when compensation is on.",
+  },
+  {
+    id: "backlight",
+    label: "Backlight compensation",
+    group: "Exposure",
+    code: 0x33,
+    max: 3,
+    style: "byte",
+    options: [
+      { label: "On", value: 2 },
+      { label: "Off", value: 3 },
+    ],
+  },
   {
     id: "saturation",
     label: "Color gain",
@@ -178,9 +253,17 @@ const specs: {
     label: "Brightness",
     group: "Image",
     code: 0xa1,
-    max: 255,
+    max: 14,
+    note: "Image processing brightness, not exposure. Native index 0–14.",
   },
-  { id: "contrast", label: "Contrast", group: "Image", code: 0xa2, max: 255 },
+  {
+    id: "contrast",
+    label: "Contrast",
+    group: "Image",
+    code: 0xa2,
+    max: 14,
+    note: "Native index 0–14.",
+  },
   {
     id: "focus_mode",
     label: "Focus mode",
@@ -304,23 +387,20 @@ export class PtzOpticsAdapter implements Adapter {
     return { verified: true, value: actual };
   }
   async move(pan: number, tilt: number, duration: number) {
-    const bytes = [
-      0x81,
-      1,
-      6,
-      1,
-      Math.max(1, Math.abs(pan)),
-      Math.max(1, Math.abs(tilt)),
-      pan === 0 ? 3 : pan < 0 ? 1 : 2,
-      tilt === 0 ? 3 : tilt < 0 ? 1 : 2,
-      255,
-    ];
     try {
-      await this.transport.request(bytes);
+      await this.transport.request(moveBytes(pan, tilt));
       await new Promise((r) => setTimeout(r, duration));
     } finally {
       await this.stop();
     }
+  }
+  /** Starts continuous pan/tilt at signed speeds; the caller owns stopping. */
+  async drive(pan: number, tilt: number) {
+    await this.transport.request(moveBytes(pan, tilt));
+  }
+  /** Zooms at a signed speed (-8 wide … 8 tele); 0 stops. The caller owns stopping. */
+  async zoom(speed: number) {
+    await this.transport.request(zoomBytes(speed));
   }
   async stop() {
     await this.transport.request([0x81, 1, 6, 1, 1, 1, 3, 3, 255]);
@@ -328,6 +408,24 @@ export class PtzOpticsAdapter implements Adapter {
   async close() {
     this.transport?.close();
   }
+}
+
+export function zoomBytes(speed: number) {
+  const p = Math.min(7, Math.abs(speed) - 1);
+  return [0x81, 1, 4, 7, speed === 0 ? 0 : (speed > 0 ? 0x20 : 0x30) | p, 255];
+}
+export function moveBytes(pan: number, tilt: number) {
+  return [
+    0x81,
+    1,
+    6,
+    1,
+    Math.max(1, Math.abs(pan)),
+    Math.max(1, Math.abs(tilt)),
+    pan === 0 ? 3 : pan < 0 ? 1 : 2,
+    tilt === 0 ? 3 : tilt < 0 ? 1 : 2,
+    255,
+  ];
 }
 
 // Color-temperature inquiry returns a packed byte (pq), although its Direct

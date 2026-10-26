@@ -1,0 +1,1928 @@
+{
+ "atem-172.16.10.10-1": {
+  "id": "atem-172.16.10.10-1",
+  "name": "Cam1",
+  "vendor": "atem",
+  "address": "172.16.10.10",
+  "model": "Blackmagic via ATEM",
+  "status": "connected",
+  "revision": 18,
+  "tally": "preview",
+  "controls": [
+   {
+    "id": "0.0",
+    "label": "Focus",
+    "group": "Lens",
+    "type": "number",
+    "value": 0.3037109375,
+    "writable": true,
+    "readable": true,
+    "min": -16,
+    "max": 15.99951171875,
+    "step": 0.00048828125,
+    "freshness": "reported",
+    "updatedAt": "2026-10-26T20:48:13.204Z",
+    "native": {
+     "category": 0,
+     "parameter": 0,
+     "type": 128
+    },
+    "note": "Reported by ATEM; this is switcher state, not confirmation from the camera. Numeric bounds are wire-format bounds; consult camera limits."
+   },
+   {
+    "id": "0.2",
+    "label": "Aperture",
+    "group": "Lens",
+    "type": "number",
+    "value": 9.5205078125,
+    "writable": true,
+    "readable": true,
+    "min": -16,
+    "max": 15.99951171875,
+    "step": 0.00048828125,
+    "freshness": "reported",
+    "updatedAt": "2026-10-26T20:48:13.206Z",
+    "native": {
+     "category": 0,
+     "parameter": 2,
+     "type": 128
+    },
+    "note": "Reported by ATEM; this is switcher state, not confirmation from the camera. Numeric bounds are wire-format bounds; consult camera limits."
+   },
+   {
+    "id": "1.16",
+    "label": "ND filter",
+    "group": "Exposure",
+    "type": "number",
+    "value": 6,
+    "writable": true,
+    "readable": true,
+    "min": -16,
+    "max": 15.99951171875,
+    "step": 0.00048828125,
+    "freshness": "reported",
+    "updatedAt": "2026-10-26T20:48:13.206Z",
+    "native": {
+     "category": 1,
+     "parameter": 16,
+     "type": 128
+    },
+    "note": "Reported by ATEM; this is switcher state, not confirmation from the camera. Numeric bounds are wire-format bounds; consult camera limits."
+   },
+   {
+    "id": "1.13",
+    "label": "Sensor gain",
+    "group": "Exposure",
+    "type": "number",
+    "value": 5,
+    "writable": true,
+    "readable": true,
+    "min": -128,
+    "max": 127,
+    "step": 1,
+    "freshness": "reported",
+    "updatedAt": "2026-10-26T20:48:13.206Z",
+    "native": {
+     "category": 1,
+     "parameter": 13,
+     "type": 1
+    },
+    "note": "Reported by ATEM; this is switcher state, not confirmation from the camera. Numeric bounds are wire-format bounds; consult camera limits."
+   },
+   {
+    "id": "1.1",
+    "label": "Sensor gain (legacy)",
+    "group": "Exposure",
+    "type": "number",
+    "value": 2,
+    "writable": true,
+    "readable": true,
+    "min": -128,
+    "max": 127,
+    "step": 1,
+    "freshness": "reported",
+    "updatedAt": "2026-10-26T20:48:13.206Z",
+    "native": {
+     "category": 1,
+     "parameter": 1,
+     "type": 1
+    },
+    "note": "Reported by ATEM; this is switcher state, not confirmation from the camera. Numeric bounds are wire-format bounds; consult camera limits."
+   },
+   {
+    "id": "1.2",
+    "label": "White balance / tint",
+    "group": "Exposure",
+    "type": "vector",
+    "value": [
+     4900,
+     -18
+    ],
+    "writable": true,
+    "readable": true,
+    "components": [
+     "Kelvin",
+     "Tint"
+    ],
+    "min": -32768,
+    "max": 32767,
+    "step": 1,
+    "freshness": "reported",
+    "updatedAt": "2026-10-26T20:48:13.206Z",
+    "native": {
+     "category": 1,
+     "parameter": 2,
+     "type": 2
+    },
+    "note": "Reported by ATEM; this is switcher state, not confirmation from the camera. Numeric bounds are wire-format bounds; consult camera limits."
+   },
+   {
+    "id": "1.5",
+    "label": "Exposure",
+    "group": "Exposure",
+    "type": "number",
+    "value": 20000,
+    "writable": true,
+    "readable": true,
+    "min": -2147483648,
+    "max": 2147483647,
+    "step": 1,
+    "freshness": "reported",
+    "updatedAt": "2026-10-26T20:48:13.206Z",
+    "native": {
+     "category": 1,
+     "parameter": 5,
+     "type": 3
+    },
+    "note": "Reported by ATEM; this is switcher state, not confirmation from the camera. Numeric bounds are wire-format bounds; consult camera limits."
+   },
+   {
+    "id": "1.8",
+    "label": "Detail",
+    "group": "Image",
+    "type": "number",
+    "value": 1,
+    "writable": true,
+    "readable": true,
+    "min": -128,
+    "max": 127,
+    "step": 1,
+    "freshness": "reported",
+    "updatedAt": "2026-10-26T20:48:13.206Z",
+    "native": {
+     "category": 1,
+     "parameter": 8,
+     "type": 1
+    },
+    "note": "Reported by ATEM; this is switcher state, not confirmation from the camera. Numeric bounds are wire-format bounds; consult camera limits."
+   },
+   {
+    "id": "4.4",
+    "label": "Color bars",
+    "group": "Image",
+    "type": "number",
+    "value": 0,
+    "writable": true,
+    "readable": true,
+    "min": -128,
+    "max": 127,
+    "step": 1,
+    "freshness": "reported",
+    "updatedAt": "2026-10-26T20:48:13.206Z",
+    "native": {
+     "category": 4,
+     "parameter": 4,
+     "type": 1
+    },
+    "note": "Reported by ATEM; this is switcher state, not confirmation from the camera. Numeric bounds are wire-format bounds; consult camera limits."
+   },
+   {
+    "id": "8.0",
+    "label": "Lift",
+    "group": "Color",
+    "type": "vector",
+    "value": [
+     0.2177734375,
+     0.10205078125,
+     0.09130859375,
+     0.05322265625
+    ],
+    "writable": true,
+    "readable": true,
+    "components": [
+     "Red",
+     "Green",
+     "Blue",
+     "Master"
+    ],
+    "min": -2,
+    "max": 2,
+    "step": 0.00048828125,
+    "freshness": "reported",
+    "updatedAt": "2026-10-26T20:48:13.206Z",
+    "native": {
+     "category": 8,
+     "parameter": 0,
+     "type": 128
+    },
+    "note": "Reported by ATEM; this is switcher state, not confirmation from the camera. Numeric bounds are wire-format bounds; consult camera limits."
+   },
+   {
+    "id": "8.1",
+    "label": "Gamma",
+    "group": "Color",
+    "type": "vector",
+    "value": [
+     -0.25830078125,
+     0.04931640625,
+     0.099609375,
+     0
+    ],
+    "writable": true,
+    "readable": true,
+    "components": [
+     "Red",
+     "Green",
+     "Blue",
+     "Master"
+    ],
+    "min": -4,
+    "max": 4,
+    "step": 0.00048828125,
+    "freshness": "reported",
+    "updatedAt": "2026-10-26T20:48:13.206Z",
+    "native": {
+     "category": 8,
+     "parameter": 1,
+     "type": 128
+    },
+    "note": "Reported by ATEM; this is switcher state, not confirmation from the camera. Numeric bounds are wire-format bounds; consult camera limits."
+   },
+   {
+    "id": "8.2",
+    "label": "Gain",
+    "group": "Color",
+    "type": "vector",
+    "value": [
+     0.83935546875,
+     0.9794921875,
+     1.01513671875,
+     1.05126953125
+    ],
+    "writable": true,
+    "readable": true,
+    "components": [
+     "Red",
+     "Green",
+     "Blue",
+     "Master"
+    ],
+    "min": 0,
+    "max": 15.99951171875,
+    "step": 0.00048828125,
+    "freshness": "reported",
+    "updatedAt": "2026-10-26T20:48:13.206Z",
+    "native": {
+     "category": 8,
+     "parameter": 2,
+     "type": 128
+    },
+    "note": "Reported by ATEM; this is switcher state, not confirmation from the camera. Numeric bounds are wire-format bounds; consult camera limits."
+   },
+   {
+    "id": "8.3",
+    "label": "Offset",
+    "group": "Color",
+    "type": "vector",
+    "value": [
+     0,
+     0,
+     0,
+     0
+    ],
+    "writable": true,
+    "readable": true,
+    "components": [
+     "Red",
+     "Green",
+     "Blue",
+     "Master"
+    ],
+    "min": -8,
+    "max": 8,
+    "step": 0.00048828125,
+    "freshness": "reported",
+    "updatedAt": "2026-10-26T20:48:13.206Z",
+    "native": {
+     "category": 8,
+     "parameter": 3,
+     "type": 128
+    },
+    "note": "Reported by ATEM; this is switcher state, not confirmation from the camera. Numeric bounds are wire-format bounds; consult camera limits."
+   },
+   {
+    "id": "8.4",
+    "label": "Contrast",
+    "group": "Color",
+    "type": "vector",
+    "value": [
+     0.5,
+     1.0595703125
+    ],
+    "writable": true,
+    "readable": true,
+    "components": [
+     "Pivot",
+     "Contrast"
+    ],
+    "min": -16,
+    "max": 15.99951171875,
+    "step": 0.00048828125,
+    "freshness": "reported",
+    "updatedAt": "2026-10-26T20:48:13.206Z",
+    "native": {
+     "category": 8,
+     "parameter": 4,
+     "type": 128
+    },
+    "note": "Reported by ATEM; this is switcher state, not confirmation from the camera. Numeric bounds are wire-format bounds; consult camera limits."
+   },
+   {
+    "id": "8.5",
+    "label": "Luma mix",
+    "group": "Color",
+    "type": "number",
+    "value": 1,
+    "writable": true,
+    "readable": true,
+    "min": 0,
+    "max": 1,
+    "step": 0.00048828125,
+    "freshness": "reported",
+    "updatedAt": "2026-10-26T20:48:13.206Z",
+    "native": {
+     "category": 8,
+     "parameter": 5,
+     "type": 128
+    },
+    "note": "Reported by ATEM; this is switcher state, not confirmation from the camera. Numeric bounds are wire-format bounds; consult camera limits."
+   },
+   {
+    "id": "8.6",
+    "label": "Hue / saturation",
+    "group": "Color",
+    "type": "vector",
+    "value": [
+     0,
+     1.33984375
+    ],
+    "writable": true,
+    "readable": true,
+    "components": [
+     "Hue",
+     "Saturation"
+    ],
+    "min": -16,
+    "max": 15.99951171875,
+    "step": 0.00048828125,
+    "freshness": "reported",
+    "updatedAt": "2026-10-26T20:48:13.206Z",
+    "native": {
+     "category": 8,
+     "parameter": 6,
+     "type": 128
+    },
+    "note": "Reported by ATEM; this is switcher state, not confirmation from the camera. Numeric bounds are wire-format bounds; consult camera limits."
+   },
+   {
+    "id": "11.0",
+    "label": "Parameter 11.0",
+    "group": "Vendor",
+    "type": "vector",
+    "value": [
+     0,
+     0
+    ],
+    "writable": true,
+    "readable": true,
+    "components": [
+     "Value 1",
+     "Value 2"
+    ],
+    "min": -16,
+    "max": 15.99951171875,
+    "step": 0.00048828125,
+    "freshness": "reported",
+    "updatedAt": "2026-10-26T20:48:13.206Z",
+    "native": {
+     "category": 11,
+     "parameter": 0,
+     "type": 128
+    },
+    "note": "Reported by ATEM; this is switcher state, not confirmation from the camera. Numeric bounds are wire-format bounds; consult camera limits."
+   },
+   {
+    "id": "0.9",
+    "label": "Zoom speed",
+    "group": "Lens",
+    "type": "number",
+    "value": 0,
+    "writable": true,
+    "readable": true,
+    "min": -16,
+    "max": 15.99951171875,
+    "step": 0.00048828125,
+    "freshness": "reported",
+    "updatedAt": "2026-10-26T20:48:13.208Z",
+    "native": {
+     "category": 0,
+     "parameter": 9,
+     "type": 128
+    },
+    "note": "Reported by ATEM; this is switcher state, not confirmation from the camera. Numeric bounds are wire-format bounds; consult camera limits."
+   },
+   {
+    "id": "native",
+    "label": "Advanced ATEM camera command",
+    "group": "Vendor",
+    "type": "json",
+    "writable": true,
+    "readable": false,
+    "freshness": "unknown",
+    "note": "Any camera-control category/parameter: {\"category\":8,\"parameter\":0,\"type\":128,\"values\":[0,0,0,0]}. Uses absolute CCmd. Supported wire types: 0, 1, 2, 3, 4, 5, 128. Consult Blackmagic camera protocol and camera capabilities."
+   }
+  ],
+  "tallyRoute": {
+   "host": "172.16.10.10",
+   "input": 1,
+   "me": 0
+  }
+ },
+ "atem-172.16.10.10-6": {
+  "id": "atem-172.16.10.10-6",
+  "name": "Cam2",
+  "vendor": "atem",
+  "address": "172.16.10.10",
+  "model": "Blackmagic via ATEM",
+  "status": "connected",
+  "revision": 132,
+  "tally": "off",
+  "controls": [
+   {
+    "id": "0.0",
+    "label": "Focus",
+    "group": "Lens",
+    "type": "number",
+    "value": 0.37353515625,
+    "writable": true,
+    "readable": true,
+    "min": -16,
+    "max": 15.99951171875,
+    "step": 0.00048828125,
+    "freshness": "reported",
+    "updatedAt": "2026-10-26T20:48:13.206Z",
+    "native": {
+     "category": 0,
+     "parameter": 0,
+     "type": 128
+    },
+    "note": "Reported by ATEM; this is switcher state, not confirmation from the camera. Numeric bounds are wire-format bounds; consult camera limits."
+   },
+   {
+    "id": "0.2",
+    "label": "Aperture",
+    "group": "Lens",
+    "type": "number",
+    "value": 2,
+    "writable": true,
+    "readable": true,
+    "min": -16,
+    "max": 15.99951171875,
+    "step": 0.00048828125,
+    "freshness": "reported",
+    "updatedAt": "2026-10-26T20:48:13.206Z",
+    "native": {
+     "category": 0,
+     "parameter": 2,
+     "type": 128
+    },
+    "note": "Reported by ATEM; this is switcher state, not confirmation from the camera. Numeric bounds are wire-format bounds; consult camera limits."
+   },
+   {
+    "id": "1.16",
+    "label": "ND filter",
+    "group": "Exposure",
+    "type": "number",
+    "value": 0,
+    "writable": true,
+    "readable": true,
+    "min": -16,
+    "max": 15.99951171875,
+    "step": 0.00048828125,
+    "freshness": "reported",
+    "updatedAt": "2026-10-26T20:48:13.206Z",
+    "native": {
+     "category": 1,
+     "parameter": 16,
+     "type": 128
+    },
+    "note": "Reported by ATEM; this is switcher state, not confirmation from the camera. Numeric bounds are wire-format bounds; consult camera limits."
+   },
+   {
+    "id": "1.13",
+    "label": "Sensor gain",
+    "group": "Exposure",
+    "type": "number",
+    "value": -10,
+    "writable": true,
+    "readable": true,
+    "min": -128,
+    "max": 127,
+    "step": 1,
+    "freshness": "reported",
+    "updatedAt": "2026-10-26T20:48:13.206Z",
+    "native": {
+     "category": 1,
+     "parameter": 13,
+     "type": 1
+    },
+    "note": "Reported by ATEM; this is switcher state, not confirmation from the camera. Numeric bounds are wire-format bounds; consult camera limits."
+   },
+   {
+    "id": "1.1",
+    "label": "Sensor gain (legacy)",
+    "group": "Exposure",
+    "type": "number",
+    "value": 2,
+    "writable": true,
+    "readable": true,
+    "min": -128,
+    "max": 127,
+    "step": 1,
+    "freshness": "reported",
+    "updatedAt": "2026-10-26T20:48:13.206Z",
+    "native": {
+     "category": 1,
+     "parameter": 1,
+     "type": 1
+    },
+    "note": "Reported by ATEM; this is switcher state, not confirmation from the camera. Numeric bounds are wire-format bounds; consult camera limits."
+   },
+   {
+    "id": "1.2",
+    "label": "White balance / tint",
+    "group": "Exposure",
+    "type": "vector",
+    "value": [
+     6100,
+     -18
+    ],
+    "writable": true,
+    "readable": true,
+    "components": [
+     "Kelvin",
+     "Tint"
+    ],
+    "min": -32768,
+    "max": 32767,
+    "step": 1,
+    "freshness": "reported",
+    "updatedAt": "2026-10-26T20:48:13.206Z",
+    "native": {
+     "category": 1,
+     "parameter": 2,
+     "type": 2
+    },
+    "note": "Reported by ATEM; this is switcher state, not confirmation from the camera. Numeric bounds are wire-format bounds; consult camera limits."
+   },
+   {
+    "id": "1.5",
+    "label": "Exposure",
+    "group": "Exposure",
+    "type": "number",
+    "value": 33333,
+    "writable": true,
+    "readable": true,
+    "min": -2147483648,
+    "max": 2147483647,
+    "step": 1,
+    "freshness": "reported",
+    "updatedAt": "2026-10-26T20:48:13.206Z",
+    "native": {
+     "category": 1,
+     "parameter": 5,
+     "type": 3
+    },
+    "note": "Reported by ATEM; this is switcher state, not confirmation from the camera. Numeric bounds are wire-format bounds; consult camera limits."
+   },
+   {
+    "id": "1.8",
+    "label": "Detail",
+    "group": "Image",
+    "type": "number",
+    "value": 1,
+    "writable": true,
+    "readable": true,
+    "min": -128,
+    "max": 127,
+    "step": 1,
+    "freshness": "reported",
+    "updatedAt": "2026-10-26T20:48:13.206Z",
+    "native": {
+     "category": 1,
+     "parameter": 8,
+     "type": 1
+    },
+    "note": "Reported by ATEM; this is switcher state, not confirmation from the camera. Numeric bounds are wire-format bounds; consult camera limits."
+   },
+   {
+    "id": "4.4",
+    "label": "Color bars",
+    "group": "Image",
+    "type": "number",
+    "value": 0,
+    "writable": true,
+    "readable": true,
+    "min": -128,
+    "max": 127,
+    "step": 1,
+    "freshness": "reported",
+    "updatedAt": "2026-10-26T20:48:13.206Z",
+    "native": {
+     "category": 4,
+     "parameter": 4,
+     "type": 1
+    },
+    "note": "Reported by ATEM; this is switcher state, not confirmation from the camera. Numeric bounds are wire-format bounds; consult camera limits."
+   },
+   {
+    "id": "8.0",
+    "label": "Lift",
+    "group": "Color",
+    "type": "vector",
+    "value": [
+     0.13720703125,
+     0.08837890625,
+     0.0283203125,
+     -0.0263671875
+    ],
+    "writable": true,
+    "readable": true,
+    "components": [
+     "Red",
+     "Green",
+     "Blue",
+     "Master"
+    ],
+    "min": -2,
+    "max": 2,
+    "step": 0.00048828125,
+    "freshness": "reported",
+    "updatedAt": "2026-10-26T20:48:13.206Z",
+    "native": {
+     "category": 8,
+     "parameter": 0,
+     "type": 128
+    },
+    "note": "Reported by ATEM; this is switcher state, not confirmation from the camera. Numeric bounds are wire-format bounds; consult camera limits."
+   },
+   {
+    "id": "8.1",
+    "label": "Gamma",
+    "group": "Color",
+    "type": "vector",
+    "value": [
+     -0.25830078125,
+     0.04931640625,
+     0.099609375,
+     0
+    ],
+    "writable": true,
+    "readable": true,
+    "components": [
+     "Red",
+     "Green",
+     "Blue",
+     "Master"
+    ],
+    "min": -4,
+    "max": 4,
+    "step": 0.00048828125,
+    "freshness": "reported",
+    "updatedAt": "2026-10-26T20:48:13.206Z",
+    "native": {
+     "category": 8,
+     "parameter": 1,
+     "type": 128
+    },
+    "note": "Reported by ATEM; this is switcher state, not confirmation from the camera. Numeric bounds are wire-format bounds; consult camera limits."
+   },
+   {
+    "id": "8.2",
+    "label": "Gain",
+    "group": "Color",
+    "type": "vector",
+    "value": [
+     0.8916015625,
+     0.99365234375,
+     1.03076171875,
+     1.21875
+    ],
+    "writable": true,
+    "readable": true,
+    "components": [
+     "Red",
+     "Green",
+     "Blue",
+     "Master"
+    ],
+    "min": 0,
+    "max": 15.99951171875,
+    "step": 0.00048828125,
+    "freshness": "reported",
+    "updatedAt": "2026-10-26T20:48:13.206Z",
+    "native": {
+     "category": 8,
+     "parameter": 2,
+     "type": 128
+    },
+    "note": "Reported by ATEM; this is switcher state, not confirmation from the camera. Numeric bounds are wire-format bounds; consult camera limits."
+   },
+   {
+    "id": "8.3",
+    "label": "Offset",
+    "group": "Color",
+    "type": "vector",
+    "value": [
+     0,
+     0,
+     0,
+     0
+    ],
+    "writable": true,
+    "readable": true,
+    "components": [
+     "Red",
+     "Green",
+     "Blue",
+     "Master"
+    ],
+    "min": -8,
+    "max": 8,
+    "step": 0.00048828125,
+    "freshness": "reported",
+    "updatedAt": "2026-10-26T20:48:13.206Z",
+    "native": {
+     "category": 8,
+     "parameter": 3,
+     "type": 128
+    },
+    "note": "Reported by ATEM; this is switcher state, not confirmation from the camera. Numeric bounds are wire-format bounds; consult camera limits."
+   },
+   {
+    "id": "8.4",
+    "label": "Contrast",
+    "group": "Color",
+    "type": "vector",
+    "value": [
+     0.5,
+     1.19970703125
+    ],
+    "writable": true,
+    "readable": true,
+    "components": [
+     "Pivot",
+     "Contrast"
+    ],
+    "min": -16,
+    "max": 15.99951171875,
+    "step": 0.00048828125,
+    "freshness": "reported",
+    "updatedAt": "2026-10-26T20:48:13.206Z",
+    "native": {
+     "category": 8,
+     "parameter": 4,
+     "type": 128
+    },
+    "note": "Reported by ATEM; this is switcher state, not confirmation from the camera. Numeric bounds are wire-format bounds; consult camera limits."
+   },
+   {
+    "id": "8.5",
+    "label": "Luma mix",
+    "group": "Color",
+    "type": "number",
+    "value": 1,
+    "writable": true,
+    "readable": true,
+    "min": 0,
+    "max": 1,
+    "step": 0.00048828125,
+    "freshness": "reported",
+    "updatedAt": "2026-10-26T20:48:13.206Z",
+    "native": {
+     "category": 8,
+     "parameter": 5,
+     "type": 128
+    },
+    "note": "Reported by ATEM; this is switcher state, not confirmation from the camera. Numeric bounds are wire-format bounds; consult camera limits."
+   },
+   {
+    "id": "8.6",
+    "label": "Hue / saturation",
+    "group": "Color",
+    "type": "vector",
+    "value": [
+     0,
+     1.19970703125
+    ],
+    "writable": true,
+    "readable": true,
+    "components": [
+     "Hue",
+     "Saturation"
+    ],
+    "min": -16,
+    "max": 15.99951171875,
+    "step": 0.00048828125,
+    "freshness": "reported",
+    "updatedAt": "2026-10-26T20:48:13.206Z",
+    "native": {
+     "category": 8,
+     "parameter": 6,
+     "type": 128
+    },
+    "note": "Reported by ATEM; this is switcher state, not confirmation from the camera. Numeric bounds are wire-format bounds; consult camera limits."
+   },
+   {
+    "id": "11.0",
+    "label": "Parameter 11.0",
+    "group": "Vendor",
+    "type": "vector",
+    "value": [
+     0,
+     0
+    ],
+    "writable": true,
+    "readable": true,
+    "components": [
+     "Value 1",
+     "Value 2"
+    ],
+    "min": -16,
+    "max": 15.99951171875,
+    "step": 0.00048828125,
+    "freshness": "reported",
+    "updatedAt": "2026-10-26T20:48:13.206Z",
+    "native": {
+     "category": 11,
+     "parameter": 0,
+     "type": 128
+    },
+    "note": "Reported by ATEM; this is switcher state, not confirmation from the camera. Numeric bounds are wire-format bounds; consult camera limits."
+   },
+   {
+    "id": "0.9",
+    "label": "Zoom speed",
+    "group": "Lens",
+    "type": "number",
+    "value": 0,
+    "writable": true,
+    "readable": true,
+    "min": -16,
+    "max": 15.99951171875,
+    "step": 0.00048828125,
+    "freshness": "reported",
+    "updatedAt": "2026-10-26T20:49:30.694Z",
+    "native": {
+     "category": 0,
+     "parameter": 9,
+     "type": 128
+    },
+    "note": "Reported by ATEM; this is switcher state, not confirmation from the camera. Numeric bounds are wire-format bounds; consult camera limits."
+   },
+   {
+    "id": "1.3",
+    "label": "Auto white balance",
+    "group": "Exposure",
+    "type": "action",
+    "value": [],
+    "writable": true,
+    "readable": false,
+    "step": 1,
+    "freshness": "unknown",
+    "updatedAt": "2026-10-26T20:48:13.208Z",
+    "native": {
+     "category": 1,
+     "parameter": 3,
+     "type": 0
+    },
+    "note": "Reported by ATEM; this is switcher state, not confirmation from the camera. Numeric bounds are wire-format bounds; consult camera limits."
+   },
+   {
+    "id": "0.1",
+    "label": "Auto focus",
+    "group": "Lens",
+    "type": "action",
+    "value": [],
+    "writable": true,
+    "readable": false,
+    "step": 1,
+    "freshness": "unknown",
+    "updatedAt": "2026-10-26T20:48:13.208Z",
+    "native": {
+     "category": 0,
+     "parameter": 1,
+     "type": 0
+    },
+    "note": "Reported by ATEM; this is switcher state, not confirmation from the camera. Numeric bounds are wire-format bounds; consult camera limits."
+   },
+   {
+    "id": "native",
+    "label": "Advanced ATEM camera command",
+    "group": "Vendor",
+    "type": "json",
+    "writable": true,
+    "readable": false,
+    "freshness": "unknown",
+    "note": "Any camera-control category/parameter: {\"category\":8,\"parameter\":0,\"type\":128,\"values\":[0,0,0,0]}. Uses absolute CCmd. Supported wire types: 0, 1, 2, 3, 4, 5, 128. Consult Blackmagic camera protocol and camera capabilities."
+   }
+  ],
+  "tallyRoute": {
+   "host": "172.16.10.10",
+   "input": 6,
+   "me": 0
+  }
+ },
+ "atem-172.16.10.10-3": {
+  "id": "atem-172.16.10.10-3",
+  "name": "Cam3",
+  "vendor": "atem",
+  "address": "172.16.10.10",
+  "model": "Blackmagic via ATEM",
+  "status": "connected",
+  "revision": 19,
+  "tally": "off",
+  "controls": [
+   {
+    "id": "0.0",
+    "label": "Focus",
+    "group": "Lens",
+    "type": "number",
+    "value": -0.12939453125,
+    "writable": true,
+    "readable": true,
+    "min": -16,
+    "max": 15.99951171875,
+    "step": 0.00048828125,
+    "freshness": "reported",
+    "updatedAt": "2026-10-26T20:48:13.206Z",
+    "native": {
+     "category": 0,
+     "parameter": 0,
+     "type": 128
+    },
+    "note": "Reported by ATEM; this is switcher state, not confirmation from the camera. Numeric bounds are wire-format bounds; consult camera limits."
+   },
+   {
+    "id": "0.2",
+    "label": "Aperture",
+    "group": "Lens",
+    "type": "number",
+    "value": 1.5,
+    "writable": true,
+    "readable": true,
+    "min": -16,
+    "max": 15.99951171875,
+    "step": 0.00048828125,
+    "freshness": "reported",
+    "updatedAt": "2026-10-26T20:48:13.206Z",
+    "native": {
+     "category": 0,
+     "parameter": 2,
+     "type": 128
+    },
+    "note": "Reported by ATEM; this is switcher state, not confirmation from the camera. Numeric bounds are wire-format bounds; consult camera limits."
+   },
+   {
+    "id": "1.16",
+    "label": "ND filter",
+    "group": "Exposure",
+    "type": "number",
+    "value": 0,
+    "writable": true,
+    "readable": true,
+    "min": -16,
+    "max": 15.99951171875,
+    "step": 0.00048828125,
+    "freshness": "reported",
+    "updatedAt": "2026-10-26T20:48:13.206Z",
+    "native": {
+     "category": 1,
+     "parameter": 16,
+     "type": 128
+    },
+    "note": "Reported by ATEM; this is switcher state, not confirmation from the camera. Numeric bounds are wire-format bounds; consult camera limits."
+   },
+   {
+    "id": "1.13",
+    "label": "Sensor gain",
+    "group": "Exposure",
+    "type": "number",
+    "value": 0,
+    "writable": true,
+    "readable": true,
+    "min": -128,
+    "max": 127,
+    "step": 1,
+    "freshness": "reported",
+    "updatedAt": "2026-10-26T20:48:13.206Z",
+    "native": {
+     "category": 1,
+     "parameter": 13,
+     "type": 1
+    },
+    "note": "Reported by ATEM; this is switcher state, not confirmation from the camera. Numeric bounds are wire-format bounds; consult camera limits."
+   },
+   {
+    "id": "1.1",
+    "label": "Sensor gain (legacy)",
+    "group": "Exposure",
+    "type": "number",
+    "value": 2,
+    "writable": true,
+    "readable": true,
+    "min": -128,
+    "max": 127,
+    "step": 1,
+    "freshness": "reported",
+    "updatedAt": "2026-10-26T20:48:13.206Z",
+    "native": {
+     "category": 1,
+     "parameter": 1,
+     "type": 1
+    },
+    "note": "Reported by ATEM; this is switcher state, not confirmation from the camera. Numeric bounds are wire-format bounds; consult camera limits."
+   },
+   {
+    "id": "1.2",
+    "label": "White balance / tint",
+    "group": "Exposure",
+    "type": "vector",
+    "value": [
+     4900,
+     -18
+    ],
+    "writable": true,
+    "readable": true,
+    "components": [
+     "Kelvin",
+     "Tint"
+    ],
+    "min": -32768,
+    "max": 32767,
+    "step": 1,
+    "freshness": "reported",
+    "updatedAt": "2026-10-26T20:48:13.206Z",
+    "native": {
+     "category": 1,
+     "parameter": 2,
+     "type": 2
+    },
+    "note": "Reported by ATEM; this is switcher state, not confirmation from the camera. Numeric bounds are wire-format bounds; consult camera limits."
+   },
+   {
+    "id": "1.5",
+    "label": "Exposure",
+    "group": "Exposure",
+    "type": "number",
+    "value": 20000,
+    "writable": true,
+    "readable": true,
+    "min": -2147483648,
+    "max": 2147483647,
+    "step": 1,
+    "freshness": "reported",
+    "updatedAt": "2026-10-26T20:48:13.206Z",
+    "native": {
+     "category": 1,
+     "parameter": 5,
+     "type": 3
+    },
+    "note": "Reported by ATEM; this is switcher state, not confirmation from the camera. Numeric bounds are wire-format bounds; consult camera limits."
+   },
+   {
+    "id": "1.8",
+    "label": "Detail",
+    "group": "Image",
+    "type": "number",
+    "value": 1,
+    "writable": true,
+    "readable": true,
+    "min": -128,
+    "max": 127,
+    "step": 1,
+    "freshness": "reported",
+    "updatedAt": "2026-10-26T20:48:13.206Z",
+    "native": {
+     "category": 1,
+     "parameter": 8,
+     "type": 1
+    },
+    "note": "Reported by ATEM; this is switcher state, not confirmation from the camera. Numeric bounds are wire-format bounds; consult camera limits."
+   },
+   {
+    "id": "4.4",
+    "label": "Color bars",
+    "group": "Image",
+    "type": "number",
+    "value": 0,
+    "writable": true,
+    "readable": true,
+    "min": -128,
+    "max": 127,
+    "step": 1,
+    "freshness": "reported",
+    "updatedAt": "2026-10-26T20:48:13.206Z",
+    "native": {
+     "category": 4,
+     "parameter": 4,
+     "type": 1
+    },
+    "note": "Reported by ATEM; this is switcher state, not confirmation from the camera. Numeric bounds are wire-format bounds; consult camera limits."
+   },
+   {
+    "id": "8.0",
+    "label": "Lift",
+    "group": "Color",
+    "type": "vector",
+    "value": [
+     0.2177734375,
+     0.10205078125,
+     0.09130859375,
+     -0.09912109375
+    ],
+    "writable": true,
+    "readable": true,
+    "components": [
+     "Red",
+     "Green",
+     "Blue",
+     "Master"
+    ],
+    "min": -2,
+    "max": 2,
+    "step": 0.00048828125,
+    "freshness": "reported",
+    "updatedAt": "2026-10-26T20:48:13.206Z",
+    "native": {
+     "category": 8,
+     "parameter": 0,
+     "type": 128
+    },
+    "note": "Reported by ATEM; this is switcher state, not confirmation from the camera. Numeric bounds are wire-format bounds; consult camera limits."
+   },
+   {
+    "id": "8.1",
+    "label": "Gamma",
+    "group": "Color",
+    "type": "vector",
+    "value": [
+     -0.25830078125,
+     0.04931640625,
+     0.099609375,
+     0
+    ],
+    "writable": true,
+    "readable": true,
+    "components": [
+     "Red",
+     "Green",
+     "Blue",
+     "Master"
+    ],
+    "min": -4,
+    "max": 4,
+    "step": 0.00048828125,
+    "freshness": "reported",
+    "updatedAt": "2026-10-26T20:48:13.206Z",
+    "native": {
+     "category": 8,
+     "parameter": 1,
+     "type": 128
+    },
+    "note": "Reported by ATEM; this is switcher state, not confirmation from the camera. Numeric bounds are wire-format bounds; consult camera limits."
+   },
+   {
+    "id": "8.2",
+    "label": "Gain",
+    "group": "Color",
+    "type": "vector",
+    "value": [
+     0.83935546875,
+     0.9794921875,
+     1.01513671875,
+     1.05126953125
+    ],
+    "writable": true,
+    "readable": true,
+    "components": [
+     "Red",
+     "Green",
+     "Blue",
+     "Master"
+    ],
+    "min": 0,
+    "max": 15.99951171875,
+    "step": 0.00048828125,
+    "freshness": "reported",
+    "updatedAt": "2026-10-26T20:48:13.206Z",
+    "native": {
+     "category": 8,
+     "parameter": 2,
+     "type": 128
+    },
+    "note": "Reported by ATEM; this is switcher state, not confirmation from the camera. Numeric bounds are wire-format bounds; consult camera limits."
+   },
+   {
+    "id": "8.3",
+    "label": "Offset",
+    "group": "Color",
+    "type": "vector",
+    "value": [
+     0,
+     0,
+     0,
+     0
+    ],
+    "writable": true,
+    "readable": true,
+    "components": [
+     "Red",
+     "Green",
+     "Blue",
+     "Master"
+    ],
+    "min": -8,
+    "max": 8,
+    "step": 0.00048828125,
+    "freshness": "reported",
+    "updatedAt": "2026-10-26T20:48:13.206Z",
+    "native": {
+     "category": 8,
+     "parameter": 3,
+     "type": 128
+    },
+    "note": "Reported by ATEM; this is switcher state, not confirmation from the camera. Numeric bounds are wire-format bounds; consult camera limits."
+   },
+   {
+    "id": "8.4",
+    "label": "Contrast",
+    "group": "Color",
+    "type": "vector",
+    "value": [
+     0.5,
+     1.0595703125
+    ],
+    "writable": true,
+    "readable": true,
+    "components": [
+     "Pivot",
+     "Contrast"
+    ],
+    "min": -16,
+    "max": 15.99951171875,
+    "step": 0.00048828125,
+    "freshness": "reported",
+    "updatedAt": "2026-10-26T20:48:13.206Z",
+    "native": {
+     "category": 8,
+     "parameter": 4,
+     "type": 128
+    },
+    "note": "Reported by ATEM; this is switcher state, not confirmation from the camera. Numeric bounds are wire-format bounds; consult camera limits."
+   },
+   {
+    "id": "8.5",
+    "label": "Luma mix",
+    "group": "Color",
+    "type": "number",
+    "value": 1,
+    "writable": true,
+    "readable": true,
+    "min": 0,
+    "max": 1,
+    "step": 0.00048828125,
+    "freshness": "reported",
+    "updatedAt": "2026-10-26T20:48:13.206Z",
+    "native": {
+     "category": 8,
+     "parameter": 5,
+     "type": 128
+    },
+    "note": "Reported by ATEM; this is switcher state, not confirmation from the camera. Numeric bounds are wire-format bounds; consult camera limits."
+   },
+   {
+    "id": "8.6",
+    "label": "Hue / saturation",
+    "group": "Color",
+    "type": "vector",
+    "value": [
+     0,
+     1.33984375
+    ],
+    "writable": true,
+    "readable": true,
+    "components": [
+     "Hue",
+     "Saturation"
+    ],
+    "min": -16,
+    "max": 15.99951171875,
+    "step": 0.00048828125,
+    "freshness": "reported",
+    "updatedAt": "2026-10-26T20:48:13.206Z",
+    "native": {
+     "category": 8,
+     "parameter": 6,
+     "type": 128
+    },
+    "note": "Reported by ATEM; this is switcher state, not confirmation from the camera. Numeric bounds are wire-format bounds; consult camera limits."
+   },
+   {
+    "id": "11.0",
+    "label": "Parameter 11.0",
+    "group": "Vendor",
+    "type": "vector",
+    "value": [
+     0,
+     0
+    ],
+    "writable": true,
+    "readable": true,
+    "components": [
+     "Value 1",
+     "Value 2"
+    ],
+    "min": -16,
+    "max": 15.99951171875,
+    "step": 0.00048828125,
+    "freshness": "reported",
+    "updatedAt": "2026-10-26T20:48:13.206Z",
+    "native": {
+     "category": 11,
+     "parameter": 0,
+     "type": 128
+    },
+    "note": "Reported by ATEM; this is switcher state, not confirmation from the camera. Numeric bounds are wire-format bounds; consult camera limits."
+   },
+   {
+    "id": "0.9",
+    "label": "Zoom speed",
+    "group": "Lens",
+    "type": "number",
+    "value": 0,
+    "writable": true,
+    "readable": true,
+    "min": -16,
+    "max": 15.99951171875,
+    "step": 0.00048828125,
+    "freshness": "reported",
+    "updatedAt": "2026-10-26T20:48:13.208Z",
+    "native": {
+     "category": 0,
+     "parameter": 9,
+     "type": 128
+    },
+    "note": "Reported by ATEM; this is switcher state, not confirmation from the camera. Numeric bounds are wire-format bounds; consult camera limits."
+   },
+   {
+    "id": "0.5",
+    "label": "Auto aperture",
+    "group": "Lens",
+    "type": "action",
+    "value": [],
+    "writable": true,
+    "readable": false,
+    "step": 1,
+    "freshness": "unknown",
+    "updatedAt": "2026-10-26T20:48:13.208Z",
+    "native": {
+     "category": 0,
+     "parameter": 5,
+     "type": 0
+    },
+    "note": "Reported by ATEM; this is switcher state, not confirmation from the camera. Numeric bounds are wire-format bounds; consult camera limits."
+   },
+   {
+    "id": "native",
+    "label": "Advanced ATEM camera command",
+    "group": "Vendor",
+    "type": "json",
+    "writable": true,
+    "readable": false,
+    "freshness": "unknown",
+    "note": "Any camera-control category/parameter: {\"category\":8,\"parameter\":0,\"type\":128,\"values\":[0,0,0,0]}. Uses absolute CCmd. Supported wire types: 0, 1, 2, 3, 4, 5, 128. Consult Blackmagic camera protocol and camera capabilities."
+   }
+  ],
+  "tallyRoute": {
+   "host": "172.16.10.10",
+   "input": 3,
+   "me": 0
+  }
+ },
+ "atem-172.16.10.10-4": {
+  "id": "atem-172.16.10.10-4",
+  "name": "Cam4",
+  "vendor": "atem",
+  "address": "172.16.10.10",
+  "model": "Blackmagic via ATEM",
+  "status": "connected",
+  "revision": 20,
+  "tally": "program",
+  "controls": [
+   {
+    "id": "0.0",
+    "label": "Focus",
+    "group": "Lens",
+    "type": "number",
+    "value": 7.4150390625,
+    "writable": true,
+    "readable": true,
+    "min": -16,
+    "max": 15.99951171875,
+    "step": 0.00048828125,
+    "freshness": "reported",
+    "updatedAt": "2026-10-26T20:48:13.206Z",
+    "native": {
+     "category": 0,
+     "parameter": 0,
+     "type": 128
+    },
+    "note": "Reported by ATEM; this is switcher state, not confirmation from the camera. Numeric bounds are wire-format bounds; consult camera limits."
+   },
+   {
+    "id": "0.2",
+    "label": "Aperture",
+    "group": "Lens",
+    "type": "number",
+    "value": 2,
+    "writable": true,
+    "readable": true,
+    "min": -16,
+    "max": 15.99951171875,
+    "step": 0.00048828125,
+    "freshness": "reported",
+    "updatedAt": "2026-10-26T20:48:13.206Z",
+    "native": {
+     "category": 0,
+     "parameter": 2,
+     "type": 128
+    },
+    "note": "Reported by ATEM; this is switcher state, not confirmation from the camera. Numeric bounds are wire-format bounds; consult camera limits."
+   },
+   {
+    "id": "1.16",
+    "label": "ND filter",
+    "group": "Exposure",
+    "type": "number",
+    "value": 0,
+    "writable": true,
+    "readable": true,
+    "min": -16,
+    "max": 15.99951171875,
+    "step": 0.00048828125,
+    "freshness": "reported",
+    "updatedAt": "2026-10-26T20:48:13.206Z",
+    "native": {
+     "category": 1,
+     "parameter": 16,
+     "type": 128
+    },
+    "note": "Reported by ATEM; this is switcher state, not confirmation from the camera. Numeric bounds are wire-format bounds; consult camera limits."
+   },
+   {
+    "id": "1.13",
+    "label": "Sensor gain",
+    "group": "Exposure",
+    "type": "number",
+    "value": 2,
+    "writable": true,
+    "readable": true,
+    "min": -128,
+    "max": 127,
+    "step": 1,
+    "freshness": "reported",
+    "updatedAt": "2026-10-26T20:48:13.206Z",
+    "native": {
+     "category": 1,
+     "parameter": 13,
+     "type": 1
+    },
+    "note": "Reported by ATEM; this is switcher state, not confirmation from the camera. Numeric bounds are wire-format bounds; consult camera limits."
+   },
+   {
+    "id": "1.1",
+    "label": "Sensor gain (legacy)",
+    "group": "Exposure",
+    "type": "number",
+    "value": 2,
+    "writable": true,
+    "readable": true,
+    "min": -128,
+    "max": 127,
+    "step": 1,
+    "freshness": "reported",
+    "updatedAt": "2026-10-26T20:48:13.206Z",
+    "native": {
+     "category": 1,
+     "parameter": 1,
+     "type": 1
+    },
+    "note": "Reported by ATEM; this is switcher state, not confirmation from the camera. Numeric bounds are wire-format bounds; consult camera limits."
+   },
+   {
+    "id": "1.2",
+    "label": "White balance / tint",
+    "group": "Exposure",
+    "type": "vector",
+    "value": [
+     5450,
+     -31
+    ],
+    "writable": true,
+    "readable": true,
+    "components": [
+     "Kelvin",
+     "Tint"
+    ],
+    "min": -32768,
+    "max": 32767,
+    "step": 1,
+    "freshness": "reported",
+    "updatedAt": "2026-10-26T20:48:13.206Z",
+    "native": {
+     "category": 1,
+     "parameter": 2,
+     "type": 2
+    },
+    "note": "Reported by ATEM; this is switcher state, not confirmation from the camera. Numeric bounds are wire-format bounds; consult camera limits."
+   },
+   {
+    "id": "1.5",
+    "label": "Exposure",
+    "group": "Exposure",
+    "type": "number",
+    "value": 20000,
+    "writable": true,
+    "readable": true,
+    "min": -2147483648,
+    "max": 2147483647,
+    "step": 1,
+    "freshness": "reported",
+    "updatedAt": "2026-10-26T20:48:13.206Z",
+    "native": {
+     "category": 1,
+     "parameter": 5,
+     "type": 3
+    },
+    "note": "Reported by ATEM; this is switcher state, not confirmation from the camera. Numeric bounds are wire-format bounds; consult camera limits."
+   },
+   {
+    "id": "1.8",
+    "label": "Detail",
+    "group": "Image",
+    "type": "number",
+    "value": 1,
+    "writable": true,
+    "readable": true,
+    "min": -128,
+    "max": 127,
+    "step": 1,
+    "freshness": "reported",
+    "updatedAt": "2026-10-26T20:48:13.206Z",
+    "native": {
+     "category": 1,
+     "parameter": 8,
+     "type": 1
+    },
+    "note": "Reported by ATEM; this is switcher state, not confirmation from the camera. Numeric bounds are wire-format bounds; consult camera limits."
+   },
+   {
+    "id": "4.4",
+    "label": "Color bars",
+    "group": "Image",
+    "type": "number",
+    "value": 0,
+    "writable": true,
+    "readable": true,
+    "min": -128,
+    "max": 127,
+    "step": 1,
+    "freshness": "reported",
+    "updatedAt": "2026-10-26T20:48:13.206Z",
+    "native": {
+     "category": 4,
+     "parameter": 4,
+     "type": 1
+    },
+    "note": "Reported by ATEM; this is switcher state, not confirmation from the camera. Numeric bounds are wire-format bounds; consult camera limits."
+   },
+   {
+    "id": "8.0",
+    "label": "Lift",
+    "group": "Color",
+    "type": "vector",
+    "value": [
+     0.24462890625,
+     0.09033203125,
+     0.1337890625,
+     -0.103515625
+    ],
+    "writable": true,
+    "readable": true,
+    "components": [
+     "Red",
+     "Green",
+     "Blue",
+     "Master"
+    ],
+    "min": -2,
+    "max": 2,
+    "step": 0.00048828125,
+    "freshness": "reported",
+    "updatedAt": "2026-10-26T20:48:13.206Z",
+    "native": {
+     "category": 8,
+     "parameter": 0,
+     "type": 128
+    },
+    "note": "Reported by ATEM; this is switcher state, not confirmation from the camera. Numeric bounds are wire-format bounds; consult camera limits."
+   },
+   {
+    "id": "8.1",
+    "label": "Gamma",
+    "group": "Color",
+    "type": "vector",
+    "value": [
+     -0.25830078125,
+     0.04931640625,
+     0.099609375,
+     0.47998046875
+    ],
+    "writable": true,
+    "readable": true,
+    "components": [
+     "Red",
+     "Green",
+     "Blue",
+     "Master"
+    ],
+    "min": -4,
+    "max": 4,
+    "step": 0.00048828125,
+    "freshness": "reported",
+    "updatedAt": "2026-10-26T20:48:13.206Z",
+    "native": {
+     "category": 8,
+     "parameter": 1,
+     "type": 128
+    },
+    "note": "Reported by ATEM; this is switcher state, not confirmation from the camera. Numeric bounds are wire-format bounds; consult camera limits."
+   },
+   {
+    "id": "8.2",
+    "label": "Gain",
+    "group": "Color",
+    "type": "vector",
+    "value": [
+     0.77978515625,
+     0.970703125,
+     1.01513671875,
+     1.2919921875
+    ],
+    "writable": true,
+    "readable": true,
+    "components": [
+     "Red",
+     "Green",
+     "Blue",
+     "Master"
+    ],
+    "min": 0,
+    "max": 15.99951171875,
+    "step": 0.00048828125,
+    "freshness": "reported",
+    "updatedAt": "2026-10-26T20:48:13.206Z",
+    "native": {
+     "category": 8,
+     "parameter": 2,
+     "type": 128
+    },
+    "note": "Reported by ATEM; this is switcher state, not confirmation from the camera. Numeric bounds are wire-format bounds; consult camera limits."
+   },
+   {
+    "id": "8.3",
+    "label": "Offset",
+    "group": "Color",
+    "type": "vector",
+    "value": [
+     0,
+     0,
+     0,
+     0
+    ],
+    "writable": true,
+    "readable": true,
+    "components": [
+     "Red",
+     "Green",
+     "Blue",
+     "Master"
+    ],
+    "min": -8,
+    "max": 8,
+    "step": 0.00048828125,
+    "freshness": "reported",
+    "updatedAt": "2026-10-26T20:48:13.206Z",
+    "native": {
+     "category": 8,
+     "parameter": 3,
+     "type": 128
+    },
+    "note": "Reported by ATEM; this is switcher state, not confirmation from the camera. Numeric bounds are wire-format bounds; consult camera limits."
+   },
+   {
+    "id": "8.4",
+    "label": "Contrast",
+    "group": "Color",
+    "type": "vector",
+    "value": [
+     0.5,
+     1.07958984375
+    ],
+    "writable": true,
+    "readable": true,
+    "components": [
+     "Pivot",
+     "Contrast"
+    ],
+    "min": -16,
+    "max": 15.99951171875,
+    "step": 0.00048828125,
+    "freshness": "reported",
+    "updatedAt": "2026-10-26T20:48:13.206Z",
+    "native": {
+     "category": 8,
+     "parameter": 4,
+     "type": 128
+    },
+    "note": "Reported by ATEM; this is switcher state, not confirmation from the camera. Numeric bounds are wire-format bounds; consult camera limits."
+   },
+   {
+    "id": "8.5",
+    "label": "Luma mix",
+    "group": "Color",
+    "type": "number",
+    "value": 0.86962890625,
+    "writable": true,
+    "readable": true,
+    "min": 0,
+    "max": 1,
+    "step": 0.00048828125,
+    "freshness": "reported",
+    "updatedAt": "2026-10-26T20:48:13.206Z",
+    "native": {
+     "category": 8,
+     "parameter": 5,
+     "type": 128
+    },
+    "note": "Reported by ATEM; this is switcher state, not confirmation from the camera. Numeric bounds are wire-format bounds; consult camera limits."
+   },
+   {
+    "id": "8.6",
+    "label": "Hue / saturation",
+    "group": "Color",
+    "type": "vector",
+    "value": [
+     0,
+     1.35986328125
+    ],
+    "writable": true,
+    "readable": true,
+    "components": [
+     "Hue",
+     "Saturation"
+    ],
+    "min": -16,
+    "max": 15.99951171875,
+    "step": 0.00048828125,
+    "freshness": "reported",
+    "updatedAt": "2026-10-26T20:48:13.206Z",
+    "native": {
+     "category": 8,
+     "parameter": 6,
+     "type": 128
+    },
+    "note": "Reported by ATEM; this is switcher state, not confirmation from the camera. Numeric bounds are wire-format bounds; consult camera limits."
+   },
+   {
+    "id": "11.0",
+    "label": "Parameter 11.0",
+    "group": "Vendor",
+    "type": "vector",
+    "value": [
+     0,
+     0
+    ],
+    "writable": true,
+    "readable": true,
+    "components": [
+     "Value 1",
+     "Value 2"
+    ],
+    "min": -16,
+    "max": 15.99951171875,
+    "step": 0.00048828125,
+    "freshness": "reported",
+    "updatedAt": "2026-10-26T20:48:13.206Z",
+    "native": {
+     "category": 11,
+     "parameter": 0,
+     "type": 128
+    },
+    "note": "Reported by ATEM; this is switcher state, not confirmation from the camera. Numeric bounds are wire-format bounds; consult camera limits."
+   },
+   {
+    "id": "0.9",
+    "label": "Zoom speed",
+    "group": "Lens",
+    "type": "number",
+    "value": 0,
+    "writable": true,
+    "readable": true,
+    "min": -16,
+    "max": 15.99951171875,
+    "step": 0.00048828125,
+    "freshness": "reported",
+    "updatedAt": "2026-10-26T20:48:13.208Z",
+    "native": {
+     "category": 0,
+     "parameter": 9,
+     "type": 128
+    },
+    "note": "Reported by ATEM; this is switcher state, not confirmation from the camera. Numeric bounds are wire-format bounds; consult camera limits."
+   },
+   {
+    "id": "0.1",
+    "label": "Auto focus",
+    "group": "Lens",
+    "type": "action",
+    "value": [],
+    "writable": true,
+    "readable": false,
+    "step": 1,
+    "freshness": "unknown",
+    "updatedAt": "2026-10-26T20:48:13.208Z",
+    "native": {
+     "category": 0,
+     "parameter": 1,
+     "type": 0
+    },
+    "note": "Reported by ATEM; this is switcher state, not confirmation from the camera. Numeric bounds are wire-format bounds; consult camera limits."
+   },
+   {
+    "id": "0.5",
+    "label": "Auto aperture",
+    "group": "Lens",
+    "type": "action",
+    "value": [],
+    "writable": true,
+    "readable": false,
+    "step": 1,
+    "freshness": "unknown",
+    "updatedAt": "2026-10-26T20:48:13.208Z",
+    "native": {
+     "category": 0,
+     "parameter": 5,
+     "type": 0
+    },
+    "note": "Reported by ATEM; this is switcher state, not confirmation from the camera. Numeric bounds are wire-format bounds; consult camera limits."
+   },
+   {
+    "id": "native",
+    "label": "Advanced ATEM camera command",
+    "group": "Vendor",
+    "type": "json",
+    "writable": true,
+    "readable": false,
+    "freshness": "unknown",
+    "note": "Any camera-control category/parameter: {\"category\":8,\"parameter\":0,\"type\":128,\"values\":[0,0,0,0]}. Uses absolute CCmd. Supported wire types: 0, 1, 2, 3, 4, 5, 128. Consult Blackmagic camera protocol and camera capabilities."
+   }
+  ],
+  "tallyRoute": {
+   "host": "172.16.10.10",
+   "input": 4,
+   "me": 0
+  }
+ }
+}

@@ -1,0 +1,141 @@
+{
+  "source": "https://github.com/obsproject/obs-studio/tree/master/plugins/decklink/win/decklink-sdk",
+  "tree": "8eabe556bb85a410d8ae0b7f06325053201745b6",
+  "files": [
+    {
+      "file": "DeckLinkAPI.idl",
+      "gitBlob": "0cdcb94011231486286e8051aa32294876bed82a",
+      "sha256": "d898b379d1bd7f6dfa9ff9a375fe74f885cf8991b4a59670c8242751f203e348"
+    },
+    {
+      "file": "DeckLinkAPIConfiguration.idl",
+      "gitBlob": "0cc3e37f0bb3bc9a8108b893a40a368101fcc977",
+      "sha256": "d1e18ea9b49ded9b7983c1da191153cbd8d0effb0726c7518bb2a3648710893b"
+    },
+    {
+      "file": "DeckLinkAPIDeckControl.idl",
+      "gitBlob": "3a63b255455ab5eee6e71957a9d6e218aa995b96",
+      "sha256": "43a563f0cb8f4141d028c6ac99aa22038b1a9233a8f49fd1dc05cea21c23e959"
+    },
+    {
+      "file": "DeckLinkAPIDiscovery.idl",
+      "gitBlob": "94e98fe0091a892d1c08799e6fef1c87bed8ceaa",
+      "sha256": "daf28ce539c2b4c3fba153b2681623826c81ef28b8405d1f0813389bf5137269"
+    },
+    {
+      "file": "DeckLinkAPIModes.idl",
+      "gitBlob": "8a475d2c1a1957910509b7bc547c5b2bacefe067",
+      "sha256": "8337c3f3dbeaf7cf88aa5a0ccf709d026f712ae9abb4bb76d0ea9d92ab99003b"
+    },
+    {
+      "file": "DeckLinkAPIStreaming.idl",
+      "gitBlob": "83ae8de1e13264e209935644f8bdf65090927c6c",
+      "sha256": "ce83f9fd2a523a50a4c3a084a7168155de47a734e3f4fcbfd2931c8343fb761b"
+    },
+    {
+      "file": "DeckLinkAPIStreaming_v10_8.idl",
+      "gitBlob": "7d8aa5af70fcec506371ecfec6aeed4b1c8182ec",
+      "sha256": "2f52186aa20901e524c5746086ad37feea31c08e570403388c418ff83c8e0b26"
+    },
+    {
+      "file": "DeckLinkAPITypes.idl",
+      "gitBlob": "40f909f36d4405a3913e8c11611bb95a2e7ba047",
+      "sha256": "4308d5a72159d9a7d8962587205119e5a81eb85ad2ce9fa14676f27ace854ae9"
+    },
+    {
+      "file": "DeckLinkAPIVersion.h",
+      "gitBlob": "6187cc7b2c1525d85a76490b9dd11a71f7ee064f",
+      "sha256": "db32f6be4188472ae9fd021527265d4d7893bf77e772f4cd4cf8fcb751cf1f6f"
+    },
+    {
+      "file": "DeckLinkAPI_v10_11.idl",
+      "gitBlob": "dd7f730d1646779e1a27d7af4f9906f76c2d7c79",
+      "sha256": "da4302efab79717a00e5f94e0b4fd96bc44cfea8d03d806b6e193342038c8eb5"
+    },
+    {
+      "file": "DeckLinkAPI_v10_2.idl",
+      "gitBlob": "02a58a29749b55f6583021aa380e7f1fde6765d4",
+      "sha256": "a127c532e19c6523f0130dba566e5d3c6871d9c5ed467ffb2e01859f9d376588"
+    },
+    {
+      "file": "DeckLinkAPI_v10_4.idl",
+      "gitBlob": "8787e968bfcf1e53b8ffad79110040ae4193711b",
+      "sha256": "da9d1ef439decfd56a37190dd008d056f247bfd4f4cfa8ff44ee7f50aa45a2ff"
+    },
+    {
+      "file": "DeckLinkAPI_v10_5.idl",
+      "gitBlob": "1e89d3989f3d510874c49824269ae26c0f60adfc",
+      "sha256": "9ed9c941ba5c21ece0e452e3d557f7132e238c12020ad45ac23fb9d607704f1b"
+    },
+    {
+      "file": "DeckLinkAPI_v10_6.idl",
+      "gitBlob": "1e43bd29c6ef56cd57fdf62b47a8fbcc4d99b463",
+      "sha256": "75f206cf82485d18142919242d685e8fac7a81d669cdc9150c1de6325662fd36"
+    },
+    {
+      "file": "DeckLinkAPI_v10_8.idl",
+      "gitBlob": "c23b993655fedf35a4612b95d4b674e58927a334",
+      "sha256": "6b3ea60f82f5b30a28ffa09e801778a43b538f93ff9024a109fd2340db9bfedd"
+    },
+    {
+      "file": "DeckLinkAPI_v10_9.idl",
+      "gitBlob": "5506387b4c2205f66c6b5e7e3c5ed21f58b474ca",
+      "sha256": "9bbd3184fbdabb60e1cb5cba0deb26f68cc7084b3c140bc7353c47ba4789f1e5"
+    },
+    {
+      "file": "DeckLinkAPI_v11_4.idl",
+      "gitBlob": "34fab91545d335223e588a78430914f1f966f814",
+      "sha256": "de0c4099d65d27de64db4bb2a6e09a2ac942852d4442e65b0ae99714d08fdf8b"
+    },
+    {
+      "file": "DeckLinkAPI_v11_5.idl",
+      "gitBlob": "c03012cab05140b7330c32f7543879ad75aa6447",
+      "sha256": "ec1a6abbeffdeb01e9c55be4ba5e97a20dfa62ad1314de526028830b8112e99d"
+    },
+    {
+      "file": "DeckLinkAPI_v11_5_1.idl",
+      "gitBlob": "03aa23ad5ecd41843d8794e5edc0b90ceecd402f",
+      "sha256": "5cd41141f4bfabeb9635f3f8b8afd833b78283ef97ed0902f0c80747eb9c61d7"
+    },
+    {
+      "file": "DeckLinkAPI_v7_1.idl",
+      "gitBlob": "e855671e30af12f2e50eecb64a331db6f14bda89",
+      "sha256": "e20378639f0f793eed8185055e016152cb9b6e3877587ad811eb2898f7492870"
+    },
+    {
+      "file": "DeckLinkAPI_v7_3.idl",
+      "gitBlob": "9fef2499fad57e3fd909388b932b8fd822218fea",
+      "sha256": "ce1ecdfb7a5ba7344d92069ab481c0b83dd82d6f452df0348543fed6b44cb560"
+    },
+    {
+      "file": "DeckLinkAPI_v7_6.idl",
+      "gitBlob": "80df6b4124a1ebff066ecaaee4355533329383ff",
+      "sha256": "860d7b063c45224f4ffc49ca6c1836acff745e44014bd297aa756aba3a6eb56c"
+    },
+    {
+      "file": "DeckLinkAPI_v7_9.idl",
+      "gitBlob": "b2228999e279ad26a34125e65851c73616661458",
+      "sha256": "1f2edd7c017ac3af047fa411143f14555a16e587fdaf7e7b69266b4877622eda"
+    },
+    {
+      "file": "DeckLinkAPI_v8_0.idl",
+      "gitBlob": "079f60bf2c323b6b351ece5a1b44c56b670cfed5",
+      "sha256": "1fd393fb2aa693fa4cfb88a18234dd6568e536ade40e17170d4f36c05e8e3c7a"
+    },
+    {
+      "file": "DeckLinkAPI_v8_1.idl",
+      "gitBlob": "5d163ae45867d31e90eeb032569d3c27c8751f6b",
+      "sha256": "ec634294e98522de80910deb3955c73725ce150977262d90e464ef4904f398a7"
+    },
+    {
+      "file": "DeckLinkAPI_v9_2.idl",
+      "gitBlob": "cc37f34acf4031d6921291bced8c260c347b5421",
+      "sha256": "1b56493543efdec533be0d3a07500ef8677aa407cd079f3f63e85d0a29b84f54"
+    },
+    {
+      "file": "DeckLinkAPI_v9_9.idl",
+      "gitBlob": "ece3bff1b9d82e9b1ae6c1477d3572d154ef1ad6",
+      "sha256": "679826e7a1609a22a95eed486b5c41e999ee3e231a927cd461070e9094b393e6"
+    }
+  ]
+}

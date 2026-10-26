@@ -95,8 +95,8 @@ select,
 textarea {
   background: var(--deep);
   color: var(--text);
-  border: 1px solid #445564;
-  border-radius: 5px;
+  border: 1px solid #3a3d42;
+  border-radius: 8px;
   padding: 9px 10px;
   min-width: 0;
   max-width: 100%;
@@ -190,8 +190,8 @@ small {
   font-size: 11px;
   margin-left: 4px;
   padding: 4px 7px;
-  background: #32414f;
-  border-radius: 4px;
+  background: #2a2c30;
+  border-radius: 6px;
 }
 .toolbar-center {
   display: flex;
@@ -383,9 +383,9 @@ small {
   font-size: 10px;
   letter-spacing: 0;
   font-weight: 500;
-  color: #b6c9d5;
-  background: #293b48;
-  border-radius: 4px;
+  color: #c3c8ce;
+  background: #2a2c30;
+  border-radius: 6px;
   padding: 4px 6px;
 }
 .state-label.program {
@@ -564,9 +564,9 @@ small {
   gap: 14px;
 }
 .control {
-  background: #202d39;
-  border: 1px solid #3a4a58;
-  border-radius: 6px;
+  background: #1f2023;
+  border: 1px solid var(--line);
+  border-radius: 10px;
   padding: 14px;
   min-width: 0;
 }
@@ -680,18 +680,171 @@ small {
 }
 .ptz-controls {
   display: flex;
-  align-items: center;
-  gap: 8px;
+  flex-direction: column;
+  gap: 14px;
   border-top: 1px solid var(--line);
   padding-top: 20px;
   margin-top: 22px;
 }
-.ptz-controls > span {
+.ptz-header,
+.ptz-arrows {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.ptz-header > span {
   margin-right: auto;
 }
 .ptz-controls small {
   display: block;
   margin-top: 5px;
+}
+.controls-pane .ptz-switch button {
+  min-width: 0;
+  min-height: 28px;
+  padding: 3px 12px;
+}
+.ptz-joystick-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 18px 24px;
+}
+.ptz-side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+}
+.ptz-joystick-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+.ptz-joystick {
+  container-type: inline-size;
+  position: relative;
+  width: 168px;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 45%, #1f2b37, var(--deep) 72%);
+  border: 1px solid var(--line);
+  box-shadow: inset 0 2px 10px #000a;
+  touch-action: none;
+  user-select: none;
+  cursor: grab;
+}
+.ptz-joystick.held {
+  cursor: grabbing;
+  border-color: var(--accent);
+}
+.ptz-joystick.disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+.ptz-joystick:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+.ptz-joystick-cross {
+  position: absolute;
+  inset: 14%;
+  border-radius: 50%;
+  border: 1px dashed #ffffff1a;
+  background:
+    linear-gradient(#ffffff14, #ffffff14) center / 1px 100% no-repeat,
+    linear-gradient(#ffffff14, #ffffff14) center / 100% 1px no-repeat;
+  pointer-events: none;
+}
+.ptz-joystick-knob {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 30%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 35%, #4a5a69, #2a3642);
+  border: 1px solid #5d6f80;
+  box-shadow: 0 4px 10px #0009;
+  pointer-events: none;
+  transition: transform 0.18s ease-out;
+}
+.ptz-joystick.held .ptz-joystick-knob {
+  transition: none;
+  background: radial-gradient(circle at 40% 35%, #a6dcec, var(--accent));
+  border-color: var(--accent);
+}
+.ptz-zoom {
+  container-type: size;
+  position: relative;
+  width: 48px;
+  height: 168px;
+  border-radius: 24px;
+  background: linear-gradient(180deg, #1f2b37, var(--deep) 50%, #1f2b37);
+  border: 1px solid var(--line);
+  box-shadow: inset 0 2px 10px #000a;
+  touch-action: none;
+  user-select: none;
+  cursor: ns-resize;
+}
+.ptz-zoom.held {
+  border-color: var(--accent);
+}
+.ptz-zoom.disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+.ptz-zoom:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+.ptz-zoom::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 22%;
+  bottom: 22%;
+  width: 1px;
+  background: #ffffff14;
+  pointer-events: none;
+}
+.ptz-zoom-end {
+  position: absolute;
+  left: 50%;
+  translate: -50% 0;
+  color: var(--muted);
+  pointer-events: none;
+}
+.ptz-zoom-end.tele {
+  top: 7px;
+}
+.ptz-zoom-end.wide {
+  bottom: 7px;
+}
+.ptz-zoom-knob {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 35%, #4a5a69, #2a3642);
+  border: 1px solid #5d6f80;
+  box-shadow: 0 4px 10px #0009;
+  pointer-events: none;
+  transition: transform 0.18s ease-out;
+}
+.ptz-zoom.held .ptz-zoom-knob {
+  transition: none;
+  background: radial-gradient(circle at 40% 35%, #a6dcec, var(--accent));
+  border-color: var(--accent);
+}
+.ptz-readout {
+  color: var(--muted);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
 }
 .empty-workspace {
   height: 100%;
@@ -958,12 +1111,12 @@ small {
   height: 29px;
   min-height: 29px;
   border-top: 1px solid var(--line);
-  background: #15202a;
+  background: #111214;
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 0 16px;
-  color: #a3b4c2;
+  color: #9a9fa5;
   font-size: 10px;
 }
 .statusbar > span {
@@ -973,7 +1126,7 @@ small {
 }
 .statusbar i {
   height: 10px;
-  border-left: 1px solid #52606c;
+  border-left: 1px solid #3a3d42;
   margin: 0 3px;
 }
 .banner {
@@ -1015,24 +1168,24 @@ dialog {
   max-width: calc(100vw - 50px);
   max-height: 85vh;
   padding: 0;
-  background: #1f2c38;
-  border: 1px solid #647686;
+  background: var(--panel);
+  border: 1px solid #3a3d42;
   color: var(--text);
   border-radius: 12px;
   box-shadow: 0 20px 100px #0008;
 }
 dialog::backdrop {
-  background: #040b1388;
+  background: #000000a6;
 }
 dialog > header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 15px 22px;
-  border-bottom: 1px solid #415362;
+  border-bottom: 1px solid var(--line);
   position: sticky;
   top: 0;
-  background: #1f2c38;
+  background: var(--panel);
   z-index: 1;
 }
 dialog > header h2 {
@@ -1361,33 +1514,47 @@ details form {
 
 /* Studio console: neutral surfaces keep camera color judgment primary. */
 :root {
-  --bg: #222426;
-  --panel: #292b2e;
-  --deep: #151719;
-  --line: #414448;
-  --muted: #b0b5bb;
+  --bg: #161719;
+  --panel: #1c1d20;
+  --deep: #0e0f10;
+  --line: #2e3034;
+  --muted: #a3a8ae;
   --accent: #ecc38b;
-  --field: #303337;
+  --field: #25272a;
   --text: #edf0f2;
+  --raised: linear-gradient(180deg, #2d2f33, #232528);
+  --raised-hover: linear-gradient(180deg, #373a3f, #2b2d31);
+  --emboss:
+    inset 0 1px 0 #ffffff14, inset 0 -1px 0 #00000040, 0 1px 2px #0000008c;
   background: var(--bg);
   color: var(--text);
 }
 .app-toolbar,
 .sidebar,
 .assistant {
-  background: #25272a;
+  background: #1b1c1f;
 }
 button {
-  background: #35383c;
-  border-color: #50545b;
+  background: var(--raised);
+  border-color: #3a3d42;
+  border-radius: 9px;
+  box-shadow: var(--emboss);
 }
 button:hover:not(:disabled) {
-  background: #44484d;
-  border-color: #899098;
+  background: var(--raised-hover);
+  border-color: #5a5f66;
+}
+button:active:not(:disabled) {
+  background: #1d1f22;
+  box-shadow: inset 0 1px 3px #0009;
+}
+button.icon,
+button.quiet {
+  box-shadow: none;
 }
 button.active,
 .icon:hover:not(:disabled) {
-  background: #414449;
+  background: #2c2e32;
 }
 button.primary {
   background: #e3bf8e;
@@ -1402,14 +1569,19 @@ button.quiet {
   background: transparent;
   border-color: transparent;
 }
+button.quiet:hover:not(:disabled) {
+  background: #ffffff0d;
+  border-color: transparent;
+}
 .console {
   max-width: 1600px;
 }
 .monitor {
   position: relative;
-  border: 1px solid #44484b;
-  border-radius: 8px;
-  background: #111315;
+  border: 1px solid #2c2e31;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #0b0c0d;
 }
 .monitor-empty {
   position: relative;
@@ -1455,21 +1627,24 @@ button.quiet {
 .view-switch {
   display: inline-flex;
   gap: 3px;
-  background: #16181b;
-  border: 1px solid #45494d;
-  border-radius: 7px;
+  background: #101113;
+  border: 1px solid #2e3034;
+  border-radius: 10px;
   padding: 3px;
+  box-shadow: inset 0 1px 3px #0008;
 }
 .view-switch button {
   background: transparent;
   border: 0;
+  border-radius: 7px;
+  box-shadow: none;
   color: #afb4ba;
   min-width: 104px;
 }
 .view-switch button.selected {
-  background: #45494e;
+  background: var(--raised-hover);
   color: #fff;
-  box-shadow: 0 1px 3px #0005;
+  box-shadow: var(--emboss);
 }
 .simple-controls {
   display: grid;
@@ -1479,7 +1654,7 @@ button.quiet {
 }
 .simple-card {
   padding: 24px;
-  background: linear-gradient(160deg, #303337, #282a2e);
+  background: linear-gradient(160deg, #222427, #1c1d20);
   border: 1px solid var(--line);
   border-radius: 9px;
 }
@@ -1852,14 +2027,14 @@ button.quiet {
   color: #ffadb3;
 }
 .camera-sidebar {
-  background: #25272a;
+  background: #1b1c1f;
 }
 .camera-item.selected {
   background: #3b3d40;
   border-color: #686866;
 }
 .app-footer {
-  background: #222426;
+  background: var(--bg);
 }
 
 /* Look Link and preset library share the camera console's neutral palette. */

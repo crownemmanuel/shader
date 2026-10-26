@@ -222,6 +222,7 @@ test("scene recalls stop if saved controls change externally and never bypass ca
     assert.equal((await f.engine.presets.wait(job.id)).status, "failed");
     f.c.vendor = "ptzoptics";
     f.c.status = "connected";
+    await f.engine.lock(f.c.id, true, "test");
     const physical = await f.save("Physical");
     assert.ok(
       f.engine.presets

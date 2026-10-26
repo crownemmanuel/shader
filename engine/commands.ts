@@ -48,6 +48,7 @@ export function commands(engine: Engine) {
           },
         },
         cameras: engine.list(),
+        hiddenCameras: [...engine.hidden],
         switchers: [...engine.switchers.values()].map((s) => s.info()),
         captureSources: [...engine.capture.sources.values()],
         exposurePolicies: engine.policies,
@@ -112,43 +113,79 @@ export function commands(engine: Engine) {
           ? engine.refresh(a.cameraId)
           : structuredClone(engine.camera(a.cameraId)),
     },
+    system_changes: {
+      description:
+        "Wait until engine state changes (camera values from any console, tally, connections, jobs), then return the change version. Pass the last version you saw; returns at once if it is stale. For live UIs.",
+      schema: z
+        .object({
+          after: z.number().int().default(-1),
+          timeoutMs: z.number().int().min(100).max(25000).default(20000),
+        })
+        .strict(),
+      readOnly: true,
+      run: (a) => engine.waitForChange(a.after, a.timeoutMs),
+    },
+    camera_unlock: {
+      description:
+        "Unlock a camera so UI, presets and agents can change it. Cameras are unlocked unless an operator locks them.",
+      schema: z.object({ cameraId: id }).strict(),
+      readOnly: false,
+      run: (a, actor) => engine.lock(a.cameraId, false, actor),
+    },
     camera_arm: {
       description:
-        "Explicitly enable writes for one camera for up to five minutes. allowLive is required for program or unknown tally. Session locks are not persisted.",
+        "Deprecated alias of camera_unlock. seconds and allowLive are accepted and ignored.",
       schema: z
         .object({
           cameraId: id,
-          seconds: z.number().int().min(1).max(300).default(60),
-          allowLive: z.boolean().default(false),
+          seconds: z.number().int().min(1).max(300).optional(),
+          allowLive: z.boolean().optional(),
         })
         .strict(),
       readOnly: false,
-      run: (a, actor) => engine.arm(a.cameraId, a.seconds, a.allowLive, actor),
+      run: (a, actor) => engine.lock(a.cameraId, false, actor),
+    },
+    cameras_hide: {
+      description:
+        "Hide or show cameras on the operator's camera buttons. Hidden cameras stay connected for tally, presets and agents. ATEM inputs use ids atem-<switcher host>-<input number> and can be hidden before they report camera data. Persists.",
+      schema: z
+        .object({
+          cameraIds: z.array(id).min(1).max(256),
+          hidden: z.boolean(),
+        })
+        .strict(),
+      readOnly: false,
+      run: (a, actor) => engine.hide(a.cameraIds, a.hidden, actor),
     },
     camera_lock: {
-      description: "Immediately lock a camera against writes.",
+      description:
+        "Lock a camera against changes from the UI, presets and agents until it is unlocked. Locks persist.",
       schema: z.object({ cameraId: id }).strict(),
       readOnly: false,
-      run: (a) => {
-        engine.presets.cancelCamera(a.cameraId, "Camera locked");
-        engine.arms.delete(a.cameraId);
-        return { locked: true };
-      },
+      run: (a, actor) => engine.lock(a.cameraId, true, actor),
     },
     control_set: {
       description:
-        "Set a camera control using its native type and expected revision. Vectors must include every component. The same validation, locking and live guard apply to UI and agents.",
+        "Set a camera control using its native type. Vectors must include every component. Pass expectedRevision to refuse the write if the camera changed since you read it; omit it for last-writer-wins. live: true marks an intermediate value while dragging and is left out of the activity log. Locks and validation apply to UI and agents alike.",
       schema: z
         .object({
           cameraId: id,
           controlId: id,
           value: z.unknown(),
-          expectedRevision: z.number().int().nonnegative(),
+          expectedRevision: z.number().int().nonnegative().optional(),
+          live: z.boolean().default(false),
         })
         .strict(),
       readOnly: false,
       run: (a, actor) =>
-        engine.set(a.cameraId, a.controlId, a.value, a.expectedRevision, actor),
+        engine.set(
+          a.cameraId,
+          a.controlId,
+          a.value,
+          a.expectedRevision,
+          actor,
+          a.live,
+        ),
     },
     camera_route: {
       description:
@@ -208,13 +245,14 @@ export function commands(engine: Engine) {
     },
     shade_apply: {
       description:
-        "Apply the same Simple brightness/warmth/tint recipe as UI. Requires write access and current revision. Partial failures report completed writes and invalidate the anchor.",
+        "Apply the same Simple brightness/warmth/tint recipe as UI. The session refuses the write if another console changed the camera since its starting point; expectedRevision optionally adds a stricter check. live: true marks an intermediate value while dragging and is left out of the activity log. Partial failures report completed writes and invalidate the anchor.",
       schema: z
         .object({
           cameraId: id,
           sessionId: id,
           intent: shadeIntent,
-          expectedRevision: z.number().int().nonnegative(),
+          expectedRevision: z.number().int().nonnegative().optional(),
+          live: z.boolean().default(false),
         })
         .strict(),
       readOnly: false,
@@ -225,6 +263,7 @@ export function commands(engine: Engine) {
           a.intent,
           a.expectedRevision,
           actor,
+          a.live,
         ),
     },
     preview_open: {
@@ -274,9 +313,31 @@ export function commands(engine: Engine) {
       run: (a, actor) =>
         engine.move(a.cameraId, a.pan, a.tilt, a.durationMs, actor),
     },
+    ptz_drive: {
+      description:
+        "Start or update continuous PTZOptics pan/tilt (joystick). Speeds are signed: negative pan left, negative tilt up; 0,0 stops. Movement stops automatically unless repeated within 600 ms. Requires write access.",
+      schema: z
+        .object({
+          cameraId: id,
+          pan: z.number().int().min(-24).max(24),
+          tilt: z.number().int().min(-20).max(20),
+        })
+        .strict(),
+      readOnly: false,
+      run: (a, actor) => engine.drive(a.cameraId, a.pan, a.tilt, actor),
+    },
+    ptz_zoom: {
+      description:
+        "Start or update continuous PTZOptics zoom. Speed is signed: negative zooms wide, positive zooms tele (1-8); 0 stops. Zoom stops automatically unless repeated within 600 ms. Requires write access.",
+      schema: z
+        .object({ cameraId: id, speed: z.number().int().min(-8).max(8) })
+        .strict(),
+      readOnly: false,
+      run: (a, actor) => engine.zoom(a.cameraId, a.speed, actor),
+    },
     ptz_stop: {
       description:
-        "Send a PTZ stop command. Always available even when write access has expired.",
+        "Stop PTZ pan/tilt and zoom. Always available even when write access has expired.",
       schema: z.object({ cameraId: id }).strict(),
       readOnly: false,
       run: (a) => engine.stop(a.cameraId),
@@ -308,6 +369,16 @@ export function commands(engine: Engine) {
         const s = engine.capture.register(a);
         await engine.save();
         return s;
+      },
+    },
+    capture_format: {
+      description: "Choose automatic detection or a supported video format for a DeckLink input. Restarts the shared preview without changing connector profiles.",
+      schema: z.object({ sourceId: id, format: z.string().regex(/^[a-zA-Z0-9]{3,4}$/).optional() }).strict(),
+      readOnly: false,
+      run: async (a) => {
+        const source = await engine.capture.setFormat(a.sourceId, a.format);
+        await engine.save();
+        return source;
       },
     },
     capture_assign: {

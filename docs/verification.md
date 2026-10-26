@@ -47,3 +47,11 @@ The production StageLight app was not modified or driven, and no physical camera
 - Expanded preview and Escape return keep the same mounted monitor and continuous generated feed; focus returns to Expand. The assistant remains usable beside the workspace. Fixed its pre-existing effect cleanup error exposed by the UI check.
 - Screenshot: `.shader/verification/compact-workspace.png`. This is generated test video, not a physical camera or DeckLink verification.
 - Rebuilt and opened the native macOS app successfully. Checked the simulator workspace and Expand → Escape return in WKWebView. The packaged app remains open with simulated controls and no physical camera connection.
+
+## Windows DeckLink integration — 26 October 2026
+
+- Added a separate native Windows SDK capture helper, stable per-subdevice identities, Quad 2 SDI connector labels, automatic/manual formats, signal diagnostics and graceful input release.
+- Cross-compiled a Windows x64 executable using LLVM MinGW and the pinned Blackmagic COM interfaces. Its imports are Windows system libraries; no third-party runtime DLL is needed beside the helper.
+- Local suite: 57 passed, 1 skipped. Nine new process-boundary tests use a Node fixture for discovery, sharing, signal recovery, eight independent workers, lifecycle/restarts, persistence and error handling. They do not establish hardware compatibility.
+- Frontend production build, packaged engine test and Tauri `cargo check` passed.
+- Windows-only WIC JPEG encode/decode self-test is wired into native builds and CI, but was not executed on this Mac. Actual Quad 2 capture, driver compatibility and sustained eight-input throughput remain pending on Windows.

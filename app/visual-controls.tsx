@@ -251,18 +251,15 @@ export function VisualSlider({
       {precise && (
         <details className="fine-tune">
           <summary>Fine-tune number</summary>
-          <input
-            type="number"
-            aria-label={`${label} precise value`}
+          <NumberField
+            label={`${label} precise value`}
             value={value}
             min={min}
             max={max}
             step={step}
             disabled={disabled}
-            onChange={(e) => {
-              if (Number.isFinite(e.target.valueAsNumber))
-                onChange(e.target.valueAsNumber);
-            }}
+            onLive={onChange}
+            onCommit={(n) => (onCommit ? onCommit(n) : onChange(n))}
           />
         </details>
       )}
@@ -276,7 +273,7 @@ export function SimpleControls({
   perform,
   advanced,
 }: {
-  camera: Camera;
+  camera: Camera & { shade?: { sessionId: string; synced: boolean } };
   disabled: boolean;
   perform: Function;
   advanced: () => void;
@@ -289,14 +286,16 @@ export function SimpleControls({
     [error, setError] = useState(""),
     [sending, setSending] = useState(false),
     [note, setNote] = useState("");
-  const mounted = useRef(true);
+  const mounted = useRef(true),
+    rebasing = useRef(false);
   useEffect(() => {
     mounted.current = true;
     return () => {
       mounted.current = false;
     };
   }, []);
-  async function begin() {
+  async function begin(reason = "") {
+    rebasing.current = true;
     try {
       const r = await command("shade_begin", { cameraId: camera.id });
       if (!mounted.current) return;
@@ -305,41 +304,91 @@ export function SimpleControls({
       setApplied(zero);
       setStrength(0);
       setError("");
-      setNote("");
+      setNote(reason);
     } catch (e) {
       setError((e as Error).message);
+    } finally {
+      rebasing.current = false;
     }
   }
+  const external =
+    "Updated from another console. Sliders now start from the live values.";
+  // Another console changed this camera: re-anchor so the sliders stay relative to what is live.
+  // A different session id means another window or agent owns the anchor; don't fight it.
+  // Wait briefly so a late switcher echo of our own write isn't mistaken for another console.
+  const shadeNow = useRef(camera.shade);
+  shadeNow.current = camera.shade;
+  useEffect(() => {
+    if (!session || sending) return;
+    const stale = () => {
+      const shade = shadeNow.current;
+      return !!shade && shade.sessionId === session.sessionId && !shade.synced;
+    };
+    if (!stale()) return;
+    const timer = setTimeout(() => {
+      if (stale() && !running.current && !rebasing.current) void begin(external);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [camera.shade?.sessionId, camera.shade?.synced, session, sending]);
   useEffect(() => {
     void begin();
   }, [camera.id]);
-  async function apply(next: ShadeIntent) {
-    if (!session || sending) return;
+  // Stream the recipe while dragging: the newest intent goes out as soon as the previous one lands.
+  // Sent with command(), not perform(), so the app-wide busy state never freezes a slider mid-drag.
+  const pending = useRef<{ intent: ShadeIntent; final: boolean } | undefined>(
+      undefined,
+    ),
+    running = useRef(false);
+  async function pump() {
+    if (running.current) return;
+    running.current = true;
     setSending(true);
     setError("");
     try {
-      const r = await perform("shade_apply", {
-        cameraId: camera.id,
-        sessionId: session.sessionId,
-        intent: next,
-        expectedRevision: camera.revision,
-      });
-      setApplied(next);
-      setNote(
-        Math.abs(r.remainingEV) > 0.05
-          ? "Brightness limit reached. Shutter is still held."
-          : r.completed.length
-            ? `Adjusted ${r.completed.join(" + ")}.`
-            : "At the starting point.",
-      );
+      while (pending.current && session) {
+        const next = pending.current;
+        pending.current = undefined;
+        const r = await command("shade_apply", {
+          cameraId: camera.id,
+          sessionId: session.sessionId,
+          intent: next.intent,
+          live: !next.final,
+        });
+        if (!mounted.current) return;
+        setApplied(next.intent);
+        setNote(
+          Math.abs(r.remainingEV) > 0.05
+            ? "Brightness limit reached. Shutter is still held."
+            : r.completed.length
+              ? `Adjusted ${r.completed.join(" + ")}.`
+              : "",
+        );
+      }
     } catch (e) {
-      setError((e as Error).message);
+      pending.current = undefined;
+      const message = (e as Error).message;
       setSession(undefined);
+      if (/settings changed|changed during|state changed/i.test(message))
+        void begin(`${external} Adjust again.`);
+      else setError(message);
     } finally {
+      running.current = false;
       setSending(false);
     }
   }
-  const locked = disabled || sending || !session,
+  function apply(next: ShadeIntent, final = true) {
+    if (!session) return;
+    setIntent(next);
+    pending.current = { intent: next, final: final || !!pending.current?.final };
+    void pump();
+  }
+  const cast = (v: number): ShadeIntent => ({
+    ...intent,
+    ...(["blue", "amber"].includes(problem)
+      ? { warmth: (v / 100) * (problem === "blue" ? 1 : -1) }
+      : { tint: (v / 100) * (problem === "green" ? 1 : -1) }),
+  });
+  const locked = disabled || !session,
     supports = session?.supported || {},
     a = axes(camera),
     shutter = a.find((a) => a.kind === "shutter");
@@ -356,7 +405,7 @@ export function SimpleControls({
         <VisualSlider
           label="Brightness"
           value={intent.brightness}
-          onChange={(v) => setIntent({ ...intent, brightness: v })}
+          onChange={(v) => apply({ ...intent, brightness: v }, false)}
           min={-4}
           max={4}
           step={0.1}
@@ -366,23 +415,42 @@ export function SimpleControls({
           right="Brighter"
           disabled={locked || !supports.brightness}
           precise={false}
-          onCommit={(v) => void apply({ ...intent, brightness: v })}
+          onCommit={(v) => apply({ ...intent, brightness: v })}
         />
         <div className="exposure-path">
-          <span className={!session?.policy?.preserveAperture ? "" : "muted"}>
-            1 · Iris {session?.policy?.preserveAperture ? "held" : ""}
-          </span>
-          <span>→</span>
-          <span>2 · Gain / ISO</span>
+          {session?.path ? (
+            session.path.map((label: string, i: number) => (
+              <React.Fragment key={label}>
+                {i > 0 && <span>→</span>}
+                <span>
+                  {i + 1} · {label}
+                </span>
+              </React.Fragment>
+            ))
+          ) : (
+            <>
+              <span
+                className={!session?.policy?.preserveAperture ? "" : "muted"}
+              >
+                1 · Iris {session?.policy?.preserveAperture ? "held" : ""}
+              </span>
+              <span>→</span>
+              <span>2 · Gain / ISO</span>
+            </>
+          )}
           <span className="shutter-held">
             <Lock size={12} /> Shutter{" "}
             {shutter ? `1/${shutter.value} s` : "held"}
           </span>
         </div>
-        <p className="helper">
-          {supports.brightness
-            ? `Stops at your Settings limits. ${session?.policy?.preserveAperture ? "Aperture stays fixed." : "Iris changes depth of field; gain may add noise."}`
-            : "No supported exposure recipe reported. Use Advanced until this camera’s control units are known."}
+        <p className={supports.brightness ? "helper hint" : "helper"}>
+          {session?.path
+            ? supports.brightness
+              ? "Walks native VISCA steps (about ½ stop each) on the control your exposure mode obeys. Gain stops at the camera’s gain limit."
+              : "This exposure mode has no adjustable position. Choose Manual, Bright, Auto or a priority mode under Advanced › Exposure."
+            : supports.brightness
+              ? `Stops at your Settings limits. ${session?.policy?.preserveAperture ? "Aperture stays fixed." : "Iris changes depth of field; gain may add noise."}`
+              : "No supported exposure recipe reported. Use Advanced until this camera’s control units are known."}
         </p>
       </div>
       <div className="simple-card color-card">
@@ -396,7 +464,7 @@ export function SimpleControls({
         <VisualSlider
           label="Warmth"
           value={intent.warmth}
-          onChange={(v) => setIntent({ ...intent, warmth: v })}
+          onChange={(v) => apply({ ...intent, warmth: v }, false)}
           min={-1}
           max={1}
           step={0.02}
@@ -405,12 +473,12 @@ export function SimpleControls({
           right="Warmer · amber"
           disabled={locked || !supports.warmth}
           precise={false}
-          onCommit={(v) => void apply({ ...intent, warmth: v })}
+          onCommit={(v) => apply({ ...intent, warmth: v })}
         />
         <VisualSlider
           label="Tint"
           value={intent.tint}
-          onChange={(v) => setIntent({ ...intent, tint: v })}
+          onChange={(v) => apply({ ...intent, tint: v }, false)}
           min={-1}
           max={1}
           step={0.02}
@@ -419,7 +487,7 @@ export function SimpleControls({
           right="More magenta"
           disabled={locked || !supports.tint}
           precise={false}
-          onCommit={(v) => void apply({ ...intent, tint: v })}
+          onCommit={(v) => apply({ ...intent, tint: v })}
         />
         {!supports.warmth && (
           <p className="helper">
@@ -467,7 +535,10 @@ export function SimpleControls({
             min={0}
             max={100}
             value={strength}
-            onChange={setStrength}
+            onChange={(v) => {
+              setStrength(v);
+              apply(cast(v), false);
+            }}
             left="None"
             right="Stronger correction"
             precise={false}
@@ -477,18 +548,9 @@ export function SimpleControls({
                 ? !supports.warmth
                 : !supports.tint)
             }
-            onCommit={(v) => {
-              const n = {
-                ...intent,
-                ...(["blue", "amber"].includes(problem)
-                  ? { warmth: (v / 100) * (problem === "blue" ? 1 : -1) }
-                  : { tint: (v / 100) * (problem === "green" ? 1 : -1) }),
-              };
-              setIntent(n);
-              void apply(n);
-            }}
+            onCommit={(v) => apply(cast(v))}
           />
-          <p className="helper">
+          <p className="helper hint">
             Adds the opposing correction from your starting point. Judge the
             result in the live preview.
           </p>
@@ -498,22 +560,16 @@ export function SimpleControls({
         <button
           className="quiet"
           disabled={sending}
+          title="Use the current picture as the starting point"
           onClick={() => void begin()}
         >
           <RotateCcw size={14} />
-          Use current picture as starting point
+          Reset start point
         </button>
         <button onClick={advanced}>
-          Show manual controls <SlidersHorizontal size={14} />
+          Manual controls <SlidersHorizontal size={14} />
         </button>
       </div>
-      {JSON.stringify(applied) !== JSON.stringify(intent) &&
-        !sending &&
-        session && (
-          <button disabled={locked} onClick={() => void apply(intent)}>
-            Apply adjustment
-          </button>
-        )}
       {note && (
         <p className="helper" role="status">
           {note}
@@ -528,35 +584,142 @@ export function SimpleControls({
   );
 }
 
+/** Number box that keeps what the operator types; in-range values stream live, Enter or blur commits. */
+export function NumberField({
+  value,
+  min,
+  max,
+  step,
+  label,
+  disabled,
+  placeholder,
+  onLive,
+  onCommit,
+}: {
+  value: number | undefined;
+  min?: number;
+  max?: number;
+  step?: number | "any";
+  label: string;
+  disabled?: boolean;
+  placeholder?: string;
+  onLive: (n: number) => void;
+  onCommit: (n: number) => void;
+}) {
+  const shown = value === undefined || Number.isNaN(value) ? "" : String(value);
+  const [text, setText] = useState(shown),
+    [focused, setFocused] = useState(false);
+  useEffect(() => {
+    if (!focused) setText(shown);
+  }, [shown, focused]);
+  const parse = (t: string) => {
+    const n = Number(t);
+    return t.trim() !== "" &&
+      Number.isFinite(n) &&
+      n >= (min ?? -Infinity) &&
+      n <= (max ?? Infinity)
+      ? n
+      : undefined;
+  };
+  return (
+    <input
+      type="number"
+      aria-label={label}
+      value={text}
+      min={min}
+      max={max}
+      step={step}
+      disabled={disabled}
+      placeholder={placeholder}
+      onFocus={() => setFocused(true)}
+      onChange={(e) => {
+        setText(e.target.value);
+        const n = parse(e.target.value);
+        if (n !== undefined) onLive(n);
+      }}
+      onBlur={(e) => {
+        setFocused(false);
+        const n = parse(e.target.value);
+        if (n !== undefined) onCommit(n);
+      }}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") e.currentTarget.blur();
+      }}
+    />
+  );
+}
+
+/**
+ * Streams an edited value to the camera. The newest value goes out as soon as the
+ * previous write settles, so a drag gives live feedback without queueing stale writes.
+ * Camera-reported values are ignored while editing, then adopted once writes settle.
+ */
+export function useLiveValue<T>(
+  reported: T,
+  send: (value: T, live: boolean) => Promise<unknown>,
+) {
+  const [value, setValue] = useState(reported),
+    [error, setError] = useState(""),
+    [editing, setEditing] = useState(false);
+  const pending = useRef<{ value: T; final: boolean } | undefined>(undefined),
+    running = useRef(false),
+    settle = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const key = JSON.stringify(reported);
+  useEffect(() => {
+    if (!editing) setValue(reported);
+  }, [key, editing]);
+  useEffect(() => () => clearTimeout(settle.current), []);
+  async function pump() {
+    if (running.current) return;
+    running.current = true;
+    while (pending.current) {
+      const next = pending.current;
+      pending.current = undefined;
+      try {
+        await send(next.value, !next.final);
+        setError("");
+      } catch (e) {
+        setError((e as Error).message);
+      }
+    }
+    running.current = false;
+    clearTimeout(settle.current);
+    settle.current = setTimeout(() => setEditing(false), 400);
+  }
+  function change(next: T, final = false) {
+    clearTimeout(settle.current);
+    setEditing(true);
+    setValue(next);
+    pending.current = {
+      value: next,
+      final: final || !!pending.current?.final,
+    };
+    void pump();
+  }
+  return { value, change, error, editing };
+}
+
 export function AxisEditor({
   axis,
   control,
-  revision,
   disabled,
   onSet,
 }: {
   axis: Axis;
   control: Control;
-  revision: number;
   disabled: boolean;
-  onSet: (value: unknown, revision: number) => Promise<unknown>;
+  onSet: (value: unknown, live: boolean) => Promise<unknown>;
 }) {
-  const [value, setValue] = useState(axis.value),
-    [base, setBase] = useState<number>(),
-    [error, setError] = useState("");
-  useEffect(() => {
-    if (base === undefined) setValue(axis.value);
-  }, [axis.value, base]);
-  const choose = (v: number) => {
-    if (base === undefined) setBase(revision);
-    setValue(v);
-  };
+  const { value, change, error, editing } = useLiveValue(axis.value, (v, live) =>
+    onSet(encodeAxis(axis, v, control), live),
+  );
   return (
     <div className="control visual-control">
       <VisualSlider
         label={axis.label}
         value={value}
-        onChange={choose}
+        onChange={(v) => change(v)}
+        onCommit={(v) => change(v, true)}
         min={axis.min}
         max={axis.max}
         step={axis.step}
@@ -597,7 +760,7 @@ export function AxisEditor({
         }
       />
       {control.note && (
-        <p className="helper">
+        <p className="helper hint">
           {axis.encoding === "ptzKelvin"
             ? "Requires color-temperature white balance mode."
             : control.native?.category !== undefined
@@ -606,44 +769,21 @@ export function AxisEditor({
         </p>
       )}
       {axis.kind === "shutter" && (
-        <p className="helper">
+        <p className="helper hint">
           Manual override. Match frame rate and lighting to avoid unwanted blur
           or flicker.
         </p>
       )}
       <div className="control-bottom">
         <small>
-          {control.freshness === "simulated"
-            ? "Demo"
-            : control.freshness === "requested"
-              ? "Sent · awaiting readback"
-              : "Camera value"}
+          {editing
+            ? "Live"
+            : control.freshness === "simulated"
+              ? "Demo"
+              : control.freshness === "requested"
+                ? "Sent · awaiting readback"
+                : "Camera value"}
         </small>
-        <button
-          disabled={disabled || base === undefined}
-          onClick={async () => {
-            try {
-              await onSet(encodeAxis(axis, value, control), base ?? revision);
-              setBase(undefined);
-              setError("");
-            } catch (e) {
-              setError((e as Error).message);
-            }
-          }}
-        >
-          Apply
-        </button>
-        {base !== undefined && (
-          <button
-            className="quiet"
-            onClick={() => {
-              setBase(undefined);
-              setError("");
-            }}
-          >
-            Revert
-          </button>
-        )}
       </div>
       {error && <p className="error-text">{error}</p>}
     </div>
@@ -653,27 +793,24 @@ export function AxisEditor({
 // Opponent-plane wheel: edits chroma around the current mean and preserves luma.
 export function ColorWheel({
   control: c,
-  revision,
   disabled,
   onSet,
 }: {
   control: Control;
-  revision: number;
   disabled: boolean;
-  onSet: (v: unknown, r: number) => Promise<unknown>;
+  onSet: (v: unknown, live: boolean) => Promise<unknown>;
 }) {
-  const initial = c.value as number[],
-    [v, setV] = useState(initial),
-    [base, setBase] = useState<number>(),
-    [error, setError] = useState("");
-  useEffect(() => {
-    if (base === undefined) setV(initial);
-  }, [JSON.stringify(initial), base]);
+  const {
+    value: v,
+    change,
+    error,
+    editing,
+  } = useLiveValue(c.value as number[], (n, live) => onSet(n, live));
   const mean = (v[0] + v[1] + v[2]) / 3,
     x = v[0] - mean,
     y = (v[1] - v[2]) / Math.sqrt(3),
     radius = 0.25;
-  function move(nx: number, ny: number) {
+  function move(nx: number, ny: number, final = false) {
     if (disabled) return;
     const l = Math.hypot(nx, ny);
     if (l > radius) {
@@ -692,8 +829,7 @@ export function ColorWheel({
       (d, i) =>
         (n[i] = Math.max(min, Math.min(max, Number((mean + d).toFixed(4))))),
     );
-    setV(n);
-    if (base === undefined) setBase(revision);
+    change(n, final);
   }
   function pointer(e: React.PointerEvent<HTMLDivElement>) {
     const r = e.currentTarget.getBoundingClientRect();
@@ -730,6 +866,10 @@ export function ColorWheel({
         onPointerMove={(e) => {
           if (e.currentTarget.hasPointerCapture(e.pointerId)) pointer(e);
         }}
+        onPointerUp={(e) => {
+          if (e.currentTarget.hasPointerCapture(e.pointerId))
+            change(v, true);
+        }}
         onKeyDown={(e) => {
           if (
             ["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(e.key)
@@ -748,6 +888,7 @@ export function ColorWheel({
                   : e.key === "ArrowDown"
                     ? -0.01
                     : 0),
+              true,
             );
           }
         }}
@@ -764,16 +905,14 @@ export function ColorWheel({
           }}
         />
       </div>
-      <div className="wheel-caption">
+      <div className="wheel-caption hint">
         Drag toward a color · arrow keys to refine
       </div>
       <VisualSlider
         label={`${c.label} master`}
         value={v[3]}
-        onChange={(n) => {
-          if (base === undefined) setBase(revision);
-          setV([v[0], v[1], v[2], n]);
-        }}
+        onChange={(n) => change([v[0], v[1], v[2], n])}
+        onCommit={(n) => change([v[0], v[1], v[2], n], true)}
         min={c.label === "Gain" ? 0 : -0.5}
         max={c.label === "Gain" ? 2 : 0.5}
         step={0.01}
@@ -787,62 +926,39 @@ export function ColorWheel({
           {v.map((n, i) => (
             <label key={i}>
               {["R", "G", "B", "Y"][i]}
-              <input
-                type="number"
-                aria-label={`${c.label} ${["red", "green", "blue", "master"][i]}`}
+              <NumberField
+                label={`${c.label} ${["red", "green", "blue", "master"][i]}`}
                 value={n}
                 step={0.01}
                 min={c.min}
                 max={c.max}
                 disabled={disabled}
-                onChange={(e) => {
-                  if (!Number.isFinite(e.target.valueAsNumber)) return;
-                  if (base === undefined) setBase(revision);
-                  setV(v.map((n, j) => (i === j ? e.target.valueAsNumber : n)));
-                }}
+                onLive={(x) => change(v.map((y, j) => (i === j ? x : y)))}
+                onCommit={(x) =>
+                  change(
+                    v.map((y, j) => (i === j ? x : y)),
+                    true,
+                  )
+                }
               />
             </label>
           ))}
         </div>
       </details>
       <div className="control-bottom">
-        <small>{c.freshness === "simulated" ? "Demo" : c.freshness}</small>
+        <small>
+          {editing ? "Live" : c.freshness === "simulated" ? "Demo" : c.freshness}
+        </small>
         <button
           className="quiet"
           disabled={disabled}
           onClick={() => {
-            if (base === undefined) setBase(revision);
             const neutral = c.label === "Gain" ? 1 : 0;
-            setV([neutral, neutral, neutral, v[3]]);
+            change([neutral, neutral, neutral, v[3]], true);
           }}
         >
           Neutral color
         </button>
-        <button
-          disabled={disabled || base === undefined}
-          onClick={async () => {
-            try {
-              await onSet(v, base ?? revision);
-              setBase(undefined);
-              setError("");
-            } catch (e) {
-              setError((e as Error).message);
-            }
-          }}
-        >
-          Apply
-        </button>
-        {base !== undefined && (
-          <button
-            className="quiet"
-            onClick={() => {
-              setBase(undefined);
-              setError("");
-            }}
-          >
-            Revert
-          </button>
-        )}
       </div>
       {error && <p className="error-text">{error}</p>}
     </div>

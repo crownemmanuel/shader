@@ -36,6 +36,7 @@ import {
 import { LookLink } from "./look-link.js";
 export const dataDirectory = () =>
   process.env.SHADER_DATA_DIR || path.join(os.homedir(), ".shader");
+export const DRIVE_DEADMAN_MS = 600;
 export class Engine extends EventEmitter {
   cameras = new Map<string, Camera>();
   adapters = new Map<string, Adapter>();
@@ -62,8 +63,14 @@ export class Engine extends EventEmitter {
   assistant = new AssistantService();
   presets = new PresetService(this);
   lighting = new LookLink(this);
-  arms = new Map<string, { until: number; allowLive: boolean }>();
+  // Cameras are writable unless the operator locks them; locks persist.
+  locks = new Set<string>();
+  // Hidden cameras stay connected (tally, presets, agents) but are left off the camera buttons.
+  hidden = new Set<string>();
   private queues = new Map<string, Promise<unknown>>();
+  // Joystick and zoom are dead-man drives keyed "move:<id>" / "zoom:<id>":
+  // each stops unless refreshed.
+  private drives = new Map<string, { speeds: string; timer: NodeJS.Timeout }>();
   private connecting = new Set<string>();
   private saved: Connection[] = [];
   private saveQueue = Promise.resolve();
@@ -72,11 +79,15 @@ export class Engine extends EventEmitter {
   policies: Record<string, ExposurePolicy> = {};
   private shades = new Map<
     string,
-    { id: string; baseline: Camera; expected: string; policy: ExposurePolicy }
+    { id: string; baseline: Camera; expected: Camera; policy: ExposurePolicy }
   >();
   private mappings: Record<string, string> = {};
+  /** Increments on every "change" event; live UIs wait on it instead of polling. */
+  changeVersion = 0;
   constructor(public directory = dataDirectory()) {
     super();
+    this.setMaxListeners(100);
+    this.on("change", () => this.changeVersion++);
   }
   async init() {
     await mkdir(this.directory, { recursive: true, mode: 0o700 });
@@ -88,6 +99,8 @@ export class Engine extends EventEmitter {
       this.mappings = config.mappings || {};
       this.routes = config.routes || {};
       this.policies = config.policies || {};
+      this.locks = new Set(config.locks || []);
+      this.hidden = new Set(config.hiddenCameras || []);
       if (config.provider) {
         const { configured, credentialStorage, ...provider } = config.provider;
         this.assistant.configure(provider);
@@ -112,7 +125,12 @@ export class Engine extends EventEmitter {
         mappings: this.mappings,
         routes: this.routes,
         policies: this.policies,
-        sources: [...this.capture.sources.values()],
+        locks: [...this.locks],
+        hiddenCameras: [...this.hidden],
+        // Camera RTSP sources are re-derived on connect, never loaded from disk.
+        sources: [...this.capture.sources.values()].filter(
+          (s) => s.kind !== "rtsp",
+        ),
         provider: this.assistant.settings(),
       },
       null,
@@ -150,11 +168,21 @@ export class Engine extends EventEmitter {
   }
   list() {
     this.updateTally();
-    return [...this.cameras.values()].map((c) => ({
-      ...structuredClone(c),
-      writeAccess: this.arms.get(c.id)?.until ?? 0,
-      allowLive: this.arms.get(c.id)?.allowLive ?? false,
-    }));
+    // Numeric id order keeps ATEM inputs as 1, 2 … 20 regardless of report order.
+    return [...this.cameras.values()]
+      .sort((a, b) => a.id.localeCompare(b.id, "en", { numeric: true }))
+      .map((c) => ({
+        ...structuredClone(c),
+        locked: this.locks.has(c.id),
+        hidden: this.hidden.has(c.id),
+        writing: this.queues.has(c.id),
+        shade: this.shades.has(c.id)
+          ? {
+              sessionId: this.shades.get(c.id)!.id,
+              synced: this.inSync(c, this.shades.get(c.id)!.expected),
+            }
+          : undefined,
+      }));
   }
   camera(id: string) {
     this.updateTally();
@@ -194,7 +222,7 @@ export class Engine extends EventEmitter {
         (c) => {
           if (this.switchers.get(c.address) === adapter) {
             const isNew = !this.cameras.has(c.id);
-            c.sourceId = this.mappings[c.id];
+            c.sourceId = this.mappings[c.id] || undefined;
             this.cameras.set(c.id, c);
             this.adapters.set(c.id, adapter);
             if (isNew && !this.routes[c.id])
@@ -225,7 +253,8 @@ export class Engine extends EventEmitter {
       if (adapter instanceof AtemAdapter)
         this.switchers.set(input.host, adapter);
       for (const c of cameras) {
-        c.sourceId = this.mappings[c.id];
+        if (c.vendor === "ptzoptics") this.attachStream(c);
+        c.sourceId = this.mappings[c.id] || undefined;
         if (input.vendor === "atem" && !this.routes[c.id])
           this.routes[c.id] = {
             host: input.host,
@@ -349,39 +378,53 @@ export class Engine extends EventEmitter {
     if (adapter instanceof AtemAdapter) this.switchers.delete(adapter.host);
     for (const [key, a] of this.adapters)
       if (a === adapter) {
+        this.forgetDrives(key);
         this.adapters.delete(key);
         this.cameras.delete(key);
-        this.arms.delete(key);
         this.shades.delete(key);
         this.capture.releaseCamera(key);
       }
     this.emit("change");
     return { disconnected: true };
   }
-  arm(id: string, seconds: number, allowLive: boolean, actor: string) {
-    const c = this.camera(id);
-    if (c.status !== "connected" && c.status !== "demo")
-      throw new Error("Camera must be connected");
-    this.arms.set(id, { until: Date.now() + seconds * 1000, allowLive });
+  async lock(id: string, locked: boolean, actor: string) {
+    this.camera(id);
+    if (locked) {
+      this.presets.cancelCamera(id, "Camera locked");
+      if (this.drives.has(`move:${id}`) || this.drives.has(`zoom:${id}`))
+        await this.stop(id).catch(() => {});
+      this.locks.add(id);
+    } else this.locks.delete(id);
     this.record(
       actor,
-      "camera_arm",
+      locked ? "camera_lock" : "camera_unlock",
       "ok",
-      `Writes enabled for ${seconds}s${allowLive ? " including live/unknown tally" : ""}`,
+      locked ? "Camera locked against changes" : "Camera unlocked",
       id,
     );
-    return { until: this.arms.get(id)!.until };
+    await this.save();
+    return { locked };
+  }
+  /** Ids need not be connected yet: ATEM inputs can be hidden by number (atem-<host>-<input>). */
+  async hide(ids: string[], hidden: boolean, actor: string) {
+    for (const id of ids) {
+      if (hidden) this.hidden.add(id);
+      else this.hidden.delete(id);
+    }
+    this.record(
+      actor,
+      hidden ? "camera_hide" : "camera_show",
+      "ok",
+      `${hidden ? "Hid" : "Showed"} ${ids.length} camera${ids.length === 1 ? "" : "s"}`,
+    );
+    await this.save();
+    return { hidden: [...this.hidden] };
   }
   guard(c: Camera) {
     if (c.vendor === "demo") return;
     if (c.status !== "connected") throw new Error("Camera is disconnected");
-    const access = this.arms.get(c.id);
-    if (!access || access.until < Date.now())
-      throw new Error("Writes are locked. Enable camera writes first.");
-    if ((c.tally === "program" || c.tally === "unknown") && !access.allowLive)
-      throw new Error(
-        "Camera is on program or tally is unknown. Explicitly allow live/unknown-tally writes.",
-      );
+    if (this.locks.has(c.id))
+      throw new Error("Camera is locked. Unlock it to make changes.");
   }
   async serialized<T>(key: string, fn: () => Promise<T>): Promise<T> {
     const prior = this.queues.get(key) || Promise.resolve(),
@@ -411,30 +454,43 @@ export class Engine extends EventEmitter {
       }
     });
   }
+  /**
+   * Without expectedRevision the newest write wins, which is what live dragging needs.
+   * Live writes skip the activity log; the operator's final value is logged.
+   */
   async set(
     id: string,
     controlId: string,
     value: unknown,
-    expectedRevision: number,
+    expectedRevision: number | undefined,
     actor: string,
+    live = false,
   ) {
     this.presets.cancelCamera(id);
     return this.serialized(id, async () => {
       this.shades.delete(id);
-      return this.setDirect(id, controlId, value, expectedRevision, actor);
+      return this.setDirect(
+        id,
+        controlId,
+        value,
+        expectedRevision,
+        actor,
+        live,
+      );
     });
   }
   private async setDirect(
     id: string,
     controlId: string,
     value: unknown,
-    expectedRevision: number,
+    expectedRevision: number | undefined,
     actor: string,
+    live = false,
   ) {
     const c = this.camera(id);
     try {
       this.guard(c);
-      if (c.revision !== expectedRevision)
+      if (expectedRevision !== undefined && c.revision !== expectedRevision)
         throw new Error(
           "Camera state changed. Read the latest state and retry.",
         );
@@ -464,13 +520,15 @@ export class Engine extends EventEmitter {
         }
       }
       c.revision++;
-      this.record(
-        actor,
-        "control_set",
-        "ok",
-        `${control.label}: ${result.verified ? "read back" : "sent; confirmation pending"}`,
-        id,
-      );
+      if (live) this.emit("change");
+      else
+        this.record(
+          actor,
+          "control_set",
+          "ok",
+          `${control.label}: ${result.verified ? "read back" : "sent; confirmation pending"}`,
+          id,
+        );
       return { camera: structuredClone(c), verified: result.verified };
     } catch (e) {
       this.record(actor, "control_set", "error", (e as Error).message, id);
@@ -567,11 +625,99 @@ export class Engine extends EventEmitter {
       return { stopped: true };
     });
   }
+  /** Stops pan/tilt and zoom. Always allowed, even on a locked camera. */
   async stop(id: string) {
+    this.forgetDrives(id);
     const a = this.adapters.get(id);
     if (!(a instanceof PtzOpticsAdapter)) throw new Error("Not a VISCA camera");
     await a.stop();
+    await a.zoom(0);
     return { stopped: true };
+  }
+  private forgetDrives(id: string) {
+    for (const key of [`move:${id}`, `zoom:${id}`]) {
+      clearTimeout(this.drives.get(key)?.timer);
+      this.drives.delete(key);
+    }
+  }
+  /** Starts or updates joystick movement; it stops unless repeated within DRIVE_DEADMAN_MS. */
+  drive(id: string, pan: number, tilt: number, actor: string) {
+    return this.hold("move", id, [pan, tilt], actor);
+  }
+  /** Starts or updates zoom (negative wide, positive tele); same dead-man rule as drive. */
+  zoom(id: string, speed: number, actor: string) {
+    return this.hold("zoom", id, [speed], actor);
+  }
+  private async hold(
+    axis: "move" | "zoom",
+    id: string,
+    speeds: number[],
+    actor: string,
+  ) {
+    const c = this.camera(id),
+      a = this.adapters.get(id),
+      key = `${axis}:${id}`,
+      prior = this.drives.get(key),
+      operation = axis === "move" ? "ptz_drive" : "ptz_zoom",
+      what = axis === "move" ? "Joystick" : "Zoom";
+    if (!(a instanceof PtzOpticsAdapter))
+      throw new Error(
+        `${what} control requires the PTZOptics VISCA connection`,
+      );
+    const halt = () => (axis === "move" ? a.stop() : a.zoom(0));
+    const release = async () => {
+      clearTimeout(this.drives.get(key)?.timer);
+      this.drives.delete(key);
+      await halt();
+    };
+    if (speeds.every((n) => !n)) {
+      await release();
+      if (prior)
+        this.record(
+          actor,
+          operation,
+          "ok",
+          `${what} released; stop acknowledged`,
+          id,
+        );
+      return { stopped: true };
+    }
+    try {
+      this.guard(c);
+    } catch (e) {
+      if (prior) await release().catch(() => {});
+      throw e;
+    }
+    clearTimeout(prior?.timer);
+    const timer = setTimeout(() => {
+      if (this.drives.get(key)?.timer !== timer) return;
+      this.drives.delete(key);
+      halt().catch(() => {});
+      this.record(actor, operation, "ok", `${what} signal lost; stop sent`, id);
+    }, DRIVE_DEADMAN_MS);
+    const signature = speeds.join(",");
+    this.drives.set(key, { speeds: signature, timer });
+    try {
+      if (prior?.speeds !== signature)
+        await (axis === "move"
+          ? a.drive(speeds[0], speeds[1])
+          : a.zoom(speeds[0]));
+    } catch (e) {
+      await release().catch(() => {});
+      throw e;
+    }
+    if (!prior) this.record(actor, operation, "ok", `${what} started`, id);
+    return { moving: true, timeoutMs: DRIVE_DEADMAN_MS };
+  }
+  /** Offers a PTZ camera's RTSP stream as an input, and uses it unless the operator chose otherwise. */
+  private attachStream(c: Camera) {
+    const id = `rtsp:${c.id}`;
+    try {
+      this.capture.addCameraStream(id, `${c.name} · network stream`, c.address);
+    } catch {
+      return;
+    }
+    if (!(c.id in this.mappings)) this.mappings[c.id] = id;
   }
   async assign(id: string, sourceId: string | null) {
     const c = this.camera(id);
@@ -579,8 +725,8 @@ export class Engine extends EventEmitter {
       throw new Error("Unknown capture source");
     if (c.sourceId !== (sourceId || undefined)) this.capture.releaseCamera(id);
     c.sourceId = sourceId || undefined;
-    if (sourceId) this.mappings[id] = sourceId;
-    else delete this.mappings[id];
+    // An explicit "none" is kept so a camera's own stream is not re-attached.
+    this.mappings[id] = sourceId || "";
     await this.save();
     return { cameraId: id, sourceId };
   }
@@ -613,8 +759,36 @@ export class Engine extends EventEmitter {
     await this.save();
     return policy;
   }
-  private fingerprint(c: Camera) {
-    return JSON.stringify(c.controls.map((p) => [p.id, p.value, p.writable]));
+  /** Resolves on the next change after `after`, or with the current version on timeout. */
+  waitForChange(after: number, timeoutMs: number) {
+    return new Promise<{ version: number }>((resolve) => {
+      if (this.changeVersion !== after)
+        return resolve({ version: this.changeVersion });
+      const done = () => {
+        clearTimeout(timer);
+        this.off("change", done);
+        // Let a burst of switcher updates settle into one UI refresh.
+        setTimeout(() => resolve({ version: this.changeVersion }), 30);
+      };
+      const timer = setTimeout(done, timeoutMs);
+      this.on("change", done);
+    });
+  }
+  // Switchers echo fixed-point values (1/2048 steps), so compare numbers with a small tolerance.
+  private inSync(c: Camera, expected: Camera) {
+    const close = (a: unknown, b: unknown): boolean =>
+      typeof a === "number" && typeof b === "number"
+        ? Math.abs(a - b) <= 1 / 1024
+        : Array.isArray(a) && Array.isArray(b)
+          ? a.length === b.length && a.every((v, i) => close(v, b[i]))
+          : JSON.stringify(a) === JSON.stringify(b);
+    return (
+      c.controls.length === expected.controls.length &&
+      c.controls.every((p) => {
+        const e = expected.controls.find((x) => x.id === p.id);
+        return !!e && e.writable === p.writable && close(p.value, e.value);
+      })
+    );
   }
   beginShade(id: string) {
     if (this.queues.has(id))
@@ -626,7 +800,7 @@ export class Engine extends EventEmitter {
     const session = {
       id: randomUUID(),
       baseline: structuredClone(c),
-      expected: this.fingerprint(c),
+      expected: structuredClone(c),
       policy: { ...policy },
     };
     this.shades.set(id, session);
@@ -639,7 +813,7 @@ export class Engine extends EventEmitter {
   planShade(id: string, sessionId: string, intent: ShadeIntent) {
     const c = this.camera(id),
       s = this.shades.get(id);
-    if (!s || s.id !== sessionId || s.expected !== this.fingerprint(c))
+    if (!s || s.id !== sessionId || !this.inSync(c, s.expected))
       throw new Error(
         "Camera settings changed. Set a new starting point before using Simple controls.",
       );
@@ -649,14 +823,15 @@ export class Engine extends EventEmitter {
     id: string,
     sessionId: string,
     intent: ShadeIntent,
-    expectedRevision: number,
+    expectedRevision: number | undefined,
     actor: string,
+    live = false,
   ) {
     this.presets.cancelCamera(id);
     return this.serialized(id, async () => {
       const c = this.camera(id);
       this.guard(c);
-      if (c.revision !== expectedRevision)
+      if (expectedRevision !== undefined && c.revision !== expectedRevision)
         throw new Error(
           "Camera state changed. Read the latest state and retry.",
         );
@@ -691,17 +866,20 @@ export class Engine extends EventEmitter {
             change.value,
             current.revision,
             actor,
+            true,
           );
           completed.push(change.label);
         }
-        this.shades.get(id)!.expected = this.fingerprint(this.camera(id));
-        this.record(
-          actor,
-          "shade_apply",
-          "ok",
-          `Applied ${completed.length} control changes; shutter held`,
-          id,
-        );
+        this.shades.get(id)!.expected = structuredClone(this.camera(id));
+        if (!live)
+          this.record(
+            actor,
+            "shade_apply",
+            "ok",
+            `Applied ${completed.length} control changes; shutter held`,
+            id,
+          );
+        else this.emit("change");
         return { ...plan, completed, camera: structuredClone(this.camera(id)) };
       } catch (e) {
         this.shades.delete(id);
@@ -712,6 +890,13 @@ export class Engine extends EventEmitter {
     });
   }
   async close() {
+    await Promise.allSettled(
+      [
+        ...new Set(
+          [...this.drives.keys()].map((k) => k.split(":").slice(1).join(":")),
+        ),
+      ].map((id) => this.stop(id)),
+    );
     await this.lighting.close();
     await this.presets.close();
     this.discovery.close();

@@ -1,3 +1,4 @@
+import { CaptureFormatSelect } from "./capture-format";
 /// <reference types="vite/client" />
 import React, { useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
@@ -19,14 +20,12 @@ import {
   Network,
   Terminal,
   Check,
-  Square,
-  ArrowLeft,
-  ArrowRight,
-  ArrowDown,
   Plug,
   Activity,
   Video,
   Info,
+  Eye,
+  EyeOff,
   Bookmark,
   Lightbulb,
 } from "lucide-react";
@@ -47,18 +46,24 @@ import {
   SimpleControls,
   AxisEditor,
   ColorWheel,
+  NumberField,
+  useLiveValue,
 } from "./visual-controls";
 import { RoutingSettings } from "./routing-settings";
+import { CameraInputsSettings } from "./camera-inputs";
 import { axes } from "../engine/shading";
 import { PresetLibrary } from "./preset-library";
 import { LightingPanel } from "./lighting-panel";
+import { PtzControls } from "./ptz-controls";
 import {
-  CameraStrip,
+  CameraBank,
   WorkspaceLayoutMenu,
   PreviewPane,
+  cameraLook,
+  useCameraButtons,
   useWorkspaceLayout,
 } from "./workspace-layout";
-type Cam = Camera & { writeAccess: number; allowLive: boolean };
+type Cam = Camera & { locked: boolean; writing: boolean; hidden: boolean };
 function Modal({
   title,
   close,
@@ -87,6 +92,24 @@ function Modal({
 function App() {
   const update = useUpdateChecks();
   const [layout, setLayout] = useWorkspaceLayout();
+  const [buttonStyles, setButtonStyles] = useCameraButtons();
+  const [settingsTab, setSettingsTab] = useState<"general" | "inputs">(
+    "general",
+  );
+  const [showHints, setShowHints] = useState(() => {
+    try {
+      return localStorage.getItem("shader.show-hints") === "1";
+    } catch {
+      return false;
+    }
+  });
+  useEffect(() => {
+    try {
+      localStorage.setItem("shader.show-hints", showHints ? "1" : "0");
+    } catch {
+      /* Hints stay hidden by default without storage. */
+    }
+  }, [showHints]);
   const [previewExpanded, setPreviewExpanded] = useState(false);
   const [cameras, setCameras] = useState<Cam[]>([]),
     [selected, setSelected] = useState(""),
@@ -108,7 +131,15 @@ function App() {
     [showAssistant, setShowAssistant] = useState(false),
     [frames, setFrames] = useState<Record<string, Frame>>({}),
     [candidates, setCandidates] = useState<Discovery[]>([]);
-  const camera = cameras.find((c) => c.id === selected),
+  const cameraIndex = cameras.findIndex((c) => c.id === selected),
+    camera = cameras[cameraIndex] as Cam | undefined,
+    look = cameraLook(
+      Math.max(0, cameraIndex),
+      buttonStyles[selected],
+      cameras[cameraIndex]?.name,
+    ),
+    writesOpen =
+      !!camera && (camera.vendor === "demo" || !camera.locked),
     frame =
       frames[selected]?.sourceId === camera?.sourceId
         ? frames[selected]
@@ -123,19 +154,44 @@ function App() {
       setCameras(data.cameras);
       setCandidates(data.discovered || []);
       setSelected((s) =>
-        data.cameras.some((c: Cam) => c.id === s)
+        data.cameras.some((c: Cam) => c.id === s && !c.hidden)
           ? s
-          : data.cameras[0]?.id || "",
+          : (data.cameras.find((c: Cam) => !c.hidden) || data.cameras[0])
+              ?.id || "",
       );
       setEngineError("");
     } catch (e) {
       setEngineError(String(e instanceof Error ? e.message : e));
     }
   };
+  // Wait on the engine's change feed so edits from other consoles appear at once;
+  // the slow interval only covers a dropped feed.
   useEffect(() => {
-    void refresh();
-    const timer = setInterval(refresh, 2000);
-    return () => clearInterval(timer);
+    let stopped = false,
+      version = -1;
+    void (async () => {
+      while (!stopped) {
+        try {
+          const next = await command<{ version: number }>("system_changes", {
+            after: version,
+            timeoutMs: 20000,
+          });
+          if (stopped) break;
+          if (next.version !== version) {
+            version = next.version;
+            await refresh();
+          }
+        } catch {
+          await refresh();
+          await new Promise((r) => setTimeout(r, 1500));
+        }
+      }
+    })();
+    const timer = setInterval(refresh, 5000);
+    return () => {
+      stopped = true;
+      clearInterval(timer);
+    };
   }, []);
   useEffect(() => {
     if (!notice) return;
@@ -190,18 +246,14 @@ function App() {
           <strong>Shader</strong>
           <span className="version">Studio</span>
         </div>
-        <div className="toolbar-center">
-          <span className={`status-dot ${status ? "online" : ""}`} />
-          {status ? "Camera engine connected" : "Starting camera engine"}
-        </div>
         <div className="toolbar-actions">
           <WorkspaceLayoutMenu layout={layout} onChange={setLayout} />
           <button onClick={() => setModal("presets")}>
-            <Bookmark size={15} />
+            <Bookmark size={14} />
             Presets
           </button>
           <button onClick={() => setModal("lighting")}>
-            <Lightbulb size={15} />
+            <Lightbulb size={14} />
             Lighting
             {status?.lighting?.listening && (
               <span className="status-dot online" />
@@ -209,7 +261,7 @@ function App() {
           </button>
           <button onClick={() => safe(discover())} disabled={!!busy}>
             <RefreshCw
-              size={15}
+              size={14}
               className={busy === "cameras_discover" ? "spin" : ""}
             />
             Discover
@@ -217,9 +269,10 @@ function App() {
           <button
             className={showAssistant ? "icon active" : "icon"}
             aria-label="Toggle assistant"
+            title="Assistant"
             onClick={() => setShowAssistant(!showAssistant)}
           >
-            <MessageSquare size={18} />
+            <MessageSquare size={17} />
           </button>
           <button
             className="icon"
@@ -235,20 +288,11 @@ function App() {
             }
             onClick={() => setModal("settings")}
           >
-            <Settings size={18} />
+            <Settings size={17} />
             {update.version && <span aria-hidden="true" style={{ color: "var(--accent, #ecc38b)", fontSize: 10 }}>↑</span>}
           </button>
         </div>
       </header>
-      {layout.showCameras && (
-        <CameraStrip
-          cameras={cameras}
-          selected={selected}
-          onSelect={setSelected}
-          onAdd={() => setModal("connect")}
-          inert={previewExpanded}
-        />
-      )}
       <div className={`workspace ${showAssistant ? "with-assistant" : ""}`}>
         <main className="console">
           {engineError && (
@@ -258,82 +302,125 @@ function App() {
           )}
           {camera ? (
             <>
-              <div className="camera-heading" inert={previewExpanded}>
-                <div>
-                  <div className="breadcrumb">
-                    Camera control <ChevronRight size={13} />
-                    {camera.vendor === "demo" ? "Simulator" : camera.model}
-                  </div>
-                  <h1>
-                    {layout.showCameras ? (
-                      <span
-                        className="selected-camera-name"
-                        title={camera.name}
-                      >
-                        {camera.name}
-                      </span>
-                    ) : (
-                      <span className="compact-camera-picker">
-                        <select
-                          aria-label="Selected camera"
-                          value={selected}
-                          onChange={(e) => setSelected(e.target.value)}
-                        >
-                          {cameras.map((c) => (
-                            <option key={c.id} value={c.id}>
-                              {c.name}
-                            </option>
-                          ))}
-                        </select>
-                        <button
-                          className="icon"
-                          aria-label="Add camera"
-                          title="Add camera…"
-                          onClick={() => setModal("connect")}
-                        >
-                          <Plus size={16} />
-                        </button>
-                      </span>
-                    )}
-                    <span
-                      className={`state-label ${camera.tally === "program" ? "program" : ""}`}
-                    >
-                      {camera.status === "demo"
-                        ? "Demo camera"
-                        : camera.tally === "program"
-                          ? "On Air"
-                          : camera.tally === "preview"
-                            ? "Preview"
-                            : camera.tally === "unknown"
-                              ? "Tally unknown"
-                              : camera.status}
-                    </span>
-                  </h1>
-                </div>
-                <button
-                  className="quiet"
-                  onClick={() =>
-                    safe(
-                      perform(
-                        "camera_get",
-                        { cameraId: camera.id, refresh: true },
-                        "Camera state refreshed",
-                      ),
-                    )
-                  }
-                  disabled={!!busy}
-                >
-                  <RefreshCw size={15} />
-                  Read camera
-                </button>
-              </div>
               <div
                 className={`shading-workspace ${layout.controlsLeft ? "controls-left" : ""}`}
+                style={{ "--cam": look.color } as React.CSSProperties}
               >
                 <PreviewPane
                   expanded={previewExpanded}
                   onExpanded={setPreviewExpanded}
                   cameraName={camera.name}
+                  title={
+                    <>
+                      <span className="cam-tag">
+                        {look.Icon && <look.Icon size={12} />}
+                        {look.label}
+                      </span>
+                      {layout.showCameras ? (
+                        look.label !== camera.name && (
+                          <h1
+                            className="selected-camera-name"
+                            title={camera.name}
+                          >
+                            {camera.name}
+                          </h1>
+                        )
+                      ) : (
+                        <span className="compact-camera-picker">
+                          <select
+                            aria-label="Selected camera"
+                            value={selected}
+                            onChange={(e) => setSelected(e.target.value)}
+                          >
+                            {cameras.filter((c) => !c.hidden).map((c) => (
+                              <option key={c.id} value={c.id}>
+                                {c.name}
+                              </option>
+                            ))}
+                          </select>
+                          <button
+                            className="icon"
+                            aria-label="Add camera"
+                            title="Add camera…"
+                            onClick={() => setModal("connect")}
+                          >
+                            <Plus size={16} />
+                          </button>
+                        </span>
+                      )}
+                      <span
+                        className={`state-label ${camera.tally === "program" ? "program" : ""}`}
+                      >
+                        {camera.status === "demo"
+                          ? "Demo"
+                          : camera.tally === "program"
+                            ? "On Air"
+                            : camera.tally === "preview"
+                              ? "Preview"
+                              : camera.tally === "unknown"
+                                ? "Tally unknown"
+                                : camera.status}
+                      </span>
+                      <span className="camera-model">
+                        {camera.vendor === "demo" ? "Simulator" : camera.model}
+                      </span>
+                    </>
+                  }
+                  actions={
+                    <button
+                      className="icon"
+                      aria-label="Read camera"
+                      title="Read camera state"
+                      onClick={() =>
+                        safe(
+                          perform(
+                            "camera_get",
+                            { cameraId: camera.id, refresh: true },
+                            "Camera state refreshed",
+                          ),
+                        )
+                      }
+                      disabled={!!busy}
+                    >
+                      <RefreshCw
+                        size={15}
+                        className={busy === "camera_get" ? "spin" : ""}
+                      />
+                    </button>
+                  }
+                  footer={
+                    layout.showCameras && (
+                      <CameraBank
+                        cameras={cameras}
+                        selected={selected}
+                        onSelect={setSelected}
+                        onAdd={() => setModal("connect")}
+                        inert={previewExpanded}
+                        styles={buttonStyles}
+                        onStyle={(id, style) =>
+                          setButtonStyles((all) => {
+                            const next = { ...all };
+                            if (style) next[id] = style;
+                            else delete next[id];
+                            return next;
+                          })
+                        }
+                        onHide={(id) =>
+                          safe(
+                            perform(
+                              "cameras_hide",
+                              { cameraIds: [id], hidden: true },
+                              "Camera hidden. Show it again in Settings › Camera inputs.",
+                            ),
+                          )
+                        }
+                        onManageHidden={() => {
+                          setSettingsTab("inputs");
+                          setModal("settings");
+                        }}
+                      />
+                    )
+                  }
                 >
                   <LiveMonitor
                     key={`preview:${camera.id}`}
@@ -351,7 +438,7 @@ function App() {
                         setModal("settings");
                       }}
                     >
-                      <Video size={15} />
+                      <Video size={14} />
                       <span
                         className="source-label"
                         title={camera.sourceId || "No capture input"}
@@ -364,15 +451,13 @@ function App() {
                       disabled={!camera.sourceId || !!busy}
                       onClick={() => safe(capture())}
                     >
-                      <Scan size={15} />
-                      {busy === "capture_frame"
-                        ? "Capturing…"
-                        : "Capture frame"}
+                      <Scan size={14} />
+                      {busy === "capture_frame" ? "Capturing…" : "Capture"}
                     </button>
                   </div>
                 </PreviewPane>
                 <section
-                  className="controls-pane"
+                  className={`controls-pane ${showHints ? "show-hints" : ""}`}
                   aria-label="Camera controls"
                   inert={previewExpanded}
                 >
@@ -396,6 +481,60 @@ function App() {
                           onClick={() => setMode("advanced")}
                         >
                           Advanced
+                        </button>
+                      </div>
+                      <div className="write-bar">
+                        <span
+                          className={`write-state ${writesOpen ? "open" : ""}`}
+                        >
+                          <span
+                            className={`status-dot ${writesOpen ? "online" : ""}`}
+                          />
+                          {camera.vendor === "demo"
+                            ? "Simulation"
+                            : writesOpen
+                              ? camera.tally === "program"
+                                ? "On air · changes are live"
+                                : "Unlocked"
+                              : "Locked"}
+                        </span>
+                        {camera.vendor !== "demo" && (
+                          <button
+                            className={writesOpen ? "" : "arm"}
+                            title={
+                              writesOpen
+                                ? "Lock this camera so nothing can change it"
+                                : "Unlock this camera"
+                            }
+                            onClick={() =>
+                              safe(
+                                perform(
+                                  writesOpen ? "camera_lock" : "camera_unlock",
+                                  { cameraId: camera.id },
+                                ),
+                              )
+                            }
+                          >
+                            {writesOpen ? (
+                              <Lock size={13} />
+                            ) : (
+                              <Unlock size={13} />
+                            )}
+                            {writesOpen ? "Lock" : "Unlock"}
+                          </button>
+                        )}
+                        <button
+                          className={showHints ? "icon active" : "icon"}
+                          aria-pressed={showHints}
+                          aria-label={
+                            showHints ? "Hide explanations" : "Show explanations"
+                          }
+                          title={
+                            showHints ? "Hide explanations" : "Show explanations"
+                          }
+                          onClick={() => setShowHints(!showHints)}
+                        >
+                          {showHints ? <EyeOff size={15} /> : <Eye size={15} />}
                         </button>
                       </div>
                     </div>
@@ -425,60 +564,8 @@ function App() {
                             </button>
                           ))}
                         </div>
-                        <span className="control-count">
-                          {camera.controls.length} controls
-                        </span>
                       </div>
                     )}
-                    <div className="write-bar">
-                      <span>
-                        <span
-                          className={`status-dot ${camera.writeAccess > Date.now() || camera.vendor === "demo" ? "online" : ""}`}
-                        />
-                        {camera.vendor === "demo"
-                          ? "Simulation controls active"
-                          : camera.writeAccess > Date.now()
-                            ? `Writes enabled · ${Math.ceil((camera.writeAccess - Date.now()) / 1000)}s remaining`
-                            : "Camera writes locked"}
-                      </span>
-                      {camera.vendor !== "demo" && (
-                        <button
-                          className="quiet"
-                          onClick={() =>
-                            safe(
-                              perform(
-                                camera.writeAccess > Date.now()
-                                  ? "camera_lock"
-                                  : "camera_arm",
-                                {
-                                  cameraId: camera.id,
-                                  ...(camera.writeAccess > Date.now()
-                                    ? {}
-                                    : { seconds: 60, allowLive: true }),
-                                },
-                              ),
-                            )
-                          }
-                        >
-                          {camera.writeAccess > Date.now() ? (
-                            <Lock size={14} />
-                          ) : (
-                            <Unlock size={14} />
-                          )}{" "}
-                          {camera.writeAccess > Date.now()
-                            ? "Lock"
-                            : "Enable writes for 60s"}
-                        </button>
-                      )}
-                    </div>
-                    {camera.vendor !== "demo" &&
-                      camera.writeAccess > Date.now() &&
-                      camera.tally !== "off" && (
-                        <p className="live-note">
-                          Writes can affect the live output. Tally:{" "}
-                          {camera.tally}.
-                        </p>
-                      )}
                   </div>
                   <div
                     className="controls-scroll"
@@ -491,8 +578,7 @@ function App() {
                         camera={camera}
                         disabled={
                           !!busy ||
-                          (camera.vendor !== "demo" &&
-                            camera.writeAccess < Date.now())
+                          !writesOpen
                         }
                         perform={perform}
                         advanced={() => {
@@ -531,18 +617,16 @@ function App() {
                           .flatMap((c) => {
                             const disabled =
                               !!busy ||
-                              (camera.vendor !== "demo" &&
-                                camera.writeAccess < Date.now()) ||
+                              !writesOpen ||
                               !c.writable;
-                            const onSet = (
-                              value: unknown,
-                              expectedRevision: number,
-                            ) =>
-                              perform("control_set", {
+                            // Sent straight to the engine (not perform) so the
+                            // shared busy state never disables a control mid-drag.
+                            const onSet = (value: unknown, live: boolean) =>
+                              command("control_set", {
                                 cameraId: camera.id,
                                 controlId: c.id,
                                 value,
-                                expectedRevision,
+                                live,
                               });
                             const visual = axes(camera).filter(
                               (a) => a.controlId === c.id,
@@ -553,7 +637,6 @@ function App() {
                                   key={`${camera.id}:${a.id}`}
                                   axis={a}
                                   control={c}
-                                  revision={camera.revision}
                                   disabled={disabled || !a.writable}
                                   onSet={onSet}
                                 />
@@ -570,7 +653,6 @@ function App() {
                                 <ColorWheel
                                   key={`${camera.id}:${c.id}`}
                                   control={c}
-                                  revision={camera.revision}
                                   disabled={disabled}
                                   onSet={onSet}
                                 />
@@ -579,7 +661,6 @@ function App() {
                               <ControlEditor
                                 key={`${camera.id}:${c.id}`}
                                 control={c}
-                                revision={camera.revision}
                                 disabled={disabled}
                                 onSet={onSet}
                               />
@@ -590,8 +671,10 @@ function App() {
                             <div className="control">
                               <h3>Shutter speed</h3>
                               <p className="helper">
-                                No supported shutter-speed value reported. Check
-                                the camera’s manual exposure mode. Native
+                                No shutter-speed value reported.
+                              </p>
+                              <p className="helper hint">
+                                Check the camera’s manual exposure mode. Native
                                 shutter controls, when reported, remain
                                 available under All.
                               </p>
@@ -610,56 +693,13 @@ function App() {
                       </section>
                     )}
                     {camera.vendor === "ptzoptics" && (
-                      <div className="ptz-controls">
-                        <span>
-                          Pan / tilt <small>250 ms pulse</small>
-                        </span>
-                        {[
-                          [-8, 0, ArrowLeft],
-                          [0, -8, ArrowUp],
-                          [0, 8, ArrowDown],
-                          [8, 0, ArrowRight],
-                        ].map(([pan, tilt, Icon], i) => {
-                          const C = Icon as typeof ArrowUp;
-                          return (
-                            <button
-                              className="icon"
-                              key={i}
-                              disabled={
-                                !!busy || camera.writeAccess < Date.now()
-                              }
-                              aria-label={
-                                [
-                                  "Pan left",
-                                  "Tilt up",
-                                  "Tilt down",
-                                  "Pan right",
-                                ][i]
-                              }
-                              onClick={() =>
-                                safe(
-                                  perform("ptz_move", {
-                                    cameraId: camera.id,
-                                    pan,
-                                    tilt,
-                                    durationMs: 250,
-                                  }),
-                                )
-                              }
-                            >
-                              <C size={17} />
-                            </button>
-                          );
-                        })}
-                        <button
-                          onClick={() =>
-                            safe(perform("ptz_stop", { cameraId: camera.id }))
-                          }
-                        >
-                          <Square size={13} />
-                          Stop
-                        </button>
-                      </div>
+                      <PtzControls
+                        camera={camera}
+                        writable={writesOpen}
+                        busy={!!busy}
+                        perform={perform}
+                        onError={setNotice}
+                      />
                     )}
                   </div>
                 </section>
@@ -780,7 +820,11 @@ function App() {
       )}
       {modal === "settings" && (
         <SettingsModal
-          close={() => setModal(null)}
+          close={() => {
+            setModal(null);
+            setSettingsTab("general");
+          }}
+          initialTab={settingsTab}
           status={status}
           perform={perform}
           onLighting={() => setModal("lighting")}
@@ -843,43 +887,25 @@ function App() {
 }
 function ControlEditor({
   control: c,
-  revision,
   disabled,
   onSet,
 }: {
   control: Control;
-  revision: number;
   disabled: boolean;
-  onSet: (value: unknown, revision: number) => Promise<unknown>;
+  onSet: (value: unknown, live: boolean) => Promise<unknown>;
 }) {
-  const [baseRevision, setBaseRevision] = useState<number>(),
-    [draft, setDraft] = useState<any>(c.value),
+  // Settings stream to the camera as they change; only raw JSON commands and actions need a button.
+  const live = useLiveValue<any>(c.value, (v, isLive) => onSet(v, isLive)),
     [text, setText] = useState(JSON.stringify(c.value ?? {}, null, 2)),
     [dirty, setDirty] = useState(false),
     [error, setError] = useState("");
   useEffect(() => {
-    if (!dirty) {
-      setDraft(c.value);
-      setText(JSON.stringify(c.value ?? {}, null, 2));
-    }
+    if (!dirty) setText(JSON.stringify(c.value ?? {}, null, 2));
   }, [JSON.stringify(c.value), dirty]);
-  const set = (v: any) => {
-    if (!dirty) setBaseRevision(revision);
-    setDraft(v);
-    setDirty(true);
-  };
-  async function apply() {
+  async function send(value: unknown) {
     try {
-      await onSet(
-        c.type === "json"
-          ? JSON.parse(text)
-          : c.type === "action"
-            ? true
-            : draft,
-        baseRevision ?? revision,
-      );
+      await onSet(value, false);
       setDirty(false);
-      setBaseRevision(undefined);
       setError("");
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
@@ -887,20 +913,20 @@ function ControlEditor({
   }
   const numeric = (
     v: number | undefined,
-    change: (v: number) => void,
+    change: (v: number, final: boolean) => void,
     label: string,
   ) => (
     <div className="numeric">
-      <input
-        aria-label={label}
-        type="number"
-        value={v ?? ""}
+      <NumberField
+        label={label}
+        value={v}
         min={c.min}
         max={c.max}
         step={c.step || "any"}
         disabled={disabled}
         placeholder="Unknown"
-        onChange={(e) => change(e.target.valueAsNumber)}
+        onLive={(n) => change(n, false)}
+        onCommit={(n) => change(n, true)}
       />
       {c.unit && <span>{c.unit}</span>}
     </div>
@@ -911,14 +937,16 @@ function ControlEditor({
     >
       <div className="control-title">
         <label>{c.label}</label>
-        <span className={`freshness ${c.freshness}`}>
-          {c.freshness === "reported"
-            ? "Read back"
-            : c.freshness === "requested"
-              ? "Sent"
-              : c.freshness === "simulated"
-                ? "Demo"
-                : "Unknown"}
+        <span className={`freshness ${live.editing ? "" : c.freshness}`}>
+          {live.editing
+            ? "Live"
+            : c.freshness === "reported"
+              ? "Read back"
+              : c.freshness === "requested"
+                ? "Sent"
+                : c.freshness === "simulated"
+                  ? "Demo"
+                  : "Unknown"}
         </span>
       </div>
       {c.type === "vector" ? (
@@ -931,11 +959,13 @@ function ControlEditor({
                 {component}
               </span>
               {numeric(
-                draft?.[i],
-                (v) => {
-                  const next = [...(draft || c.components?.map(() => 0) || [])];
+                live.value?.[i],
+                (v, final) => {
+                  const next = [
+                    ...(live.value || c.components?.map(() => 0) || []),
+                  ];
                   next[i] = v;
-                  set(next);
+                  live.change(next, final);
                 },
                 `${c.label} ${component}`,
               )}
@@ -943,15 +973,16 @@ function ControlEditor({
           ))}
         </div>
       ) : c.type === "number" ? (
-        numeric(draft, (v) => set(v), c.label)
+        numeric(live.value, (v, final) => live.change(v, final), c.label)
       ) : c.type === "enum" ? (
         <select
           aria-label={c.label}
-          value={draft ?? ""}
+          value={live.value ?? ""}
           disabled={disabled}
           onChange={(e) =>
-            set(
+            live.change(
               c.options?.find((o) => String(o.value) === e.target.value)?.value,
+              true,
             )
           }
         >
@@ -968,18 +999,25 @@ function ControlEditor({
         <label className="checkbox">
           <input
             type="checkbox"
-            checked={draft === true}
+            checked={live.value === true}
             disabled={disabled}
-            onChange={(e) => set(e.target.checked)}
+            onChange={(e) => live.change(e.target.checked, true)}
           />
           Enabled
         </label>
       ) : c.type === "string" ? (
         <input
+          key={String(c.value ?? "")}
           aria-label={c.label}
-          value={draft || ""}
+          defaultValue={c.value == null ? "" : String(c.value)}
           disabled={disabled}
-          onChange={(e) => set(e.target.value)}
+          onBlur={(e) => {
+            if (e.target.value !== (c.value ?? ""))
+              live.change(e.target.value, true);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") e.currentTarget.blur();
+          }}
         />
       ) : c.type === "json" ? (
         <textarea
@@ -987,36 +1025,40 @@ function ControlEditor({
           value={text}
           disabled={disabled}
           onChange={(e) => {
-            if (!dirty) setBaseRevision(revision);
             setText(e.target.value);
             setDirty(true);
           }}
           rows={4}
         />
       ) : null}
-      {c.note && <p className="control-note">{c.note}</p>}
-      {error && <p className="error-text">{error}</p>}
+      {c.note && <p className="control-note hint">{c.note}</p>}
+      {(live.error || error) && (
+        <p className="error-text">{live.error || error}</p>
+      )}
       <div className="control-bottom">
         <small>{c.id}</small>
-        {dirty && (
-          <button
-            className="quiet apply"
-            onClick={() => {
-              setDirty(false);
-              setBaseRevision(undefined);
-              setError("");
-            }}
-          >
-            Revert
-          </button>
-        )}
-        {c.writable && (
+        {c.writable && c.type === "json" && (
           <button
             className={dirty ? "apply dirty" : "apply"}
-            disabled={disabled || (!dirty && c.type !== "action")}
-            onClick={() => void apply()}
+            disabled={disabled || !dirty}
+            onClick={() => {
+              try {
+                void send(JSON.parse(text));
+              } catch (e) {
+                setError((e as Error).message);
+              }
+            }}
           >
-            {c.type === "action" ? "Run" : dirty ? "Apply change" : "Apply"}
+            Send
+          </button>
+        )}
+        {c.writable && c.type === "action" && (
+          <button
+            className="apply"
+            disabled={disabled}
+            onClick={() => void send(true)}
+          >
+            Run
           </button>
         )}
       </div>
@@ -1202,15 +1244,18 @@ function ConnectModal({
 }
 function SettingsModal({
   close,
+  initialTab = "general",
   status,
   perform,
   onLighting,
 }: {
   close: () => void;
+  initialTab?: "general" | "inputs";
   status: any;
   perform: Function;
   onLighting: () => void;
 }) {
+  const [tab, setTab] = useState(initialTab);
   const [provider, setProvider] = useState(
       status?.provider?.provider || "openai",
     ),
@@ -1222,7 +1267,30 @@ function SettingsModal({
     [error, setError] = useState("");
   return (
     <Modal title="Settings" close={close}>
-      <div className="form">
+      <div className="settings-tabs" role="tablist" aria-label="Settings">
+        <button
+          role="tab"
+          aria-selected={tab === "general"}
+          onClick={() => setTab("general")}
+        >
+          General
+        </button>
+        <button
+          role="tab"
+          aria-selected={tab === "inputs"}
+          onClick={() => setTab("inputs")}
+        >
+          Camera inputs
+        </button>
+      </div>
+      {tab === "inputs" && (
+        <CameraInputsSettings status={status} perform={perform} />
+      )}
+      {/* Kept mounted while hidden so unsaved fields survive a tab switch. */}
+      <div
+        className="form"
+        style={tab === "general" ? undefined : { display: "none" }}
+      >
         <AppUpdates />
         <RoutingSettings status={status} perform={perform} />
         <div className="settings-intro">
@@ -1432,15 +1500,18 @@ function CaptureModal({
               name="capture-source"
               value={s.id}
               checked={selected === s.id}
+              disabled={s.available === false}
               onChange={() => setSelected(s.id)}
             />
             <Video size={20} />
             <span>
               {s.name}
-              <small>{s.kind}</small>
+              <small>{s.backend === "decklink-sdk" ? "Blackmagic DeckLink" : s.kind}{s.available === false ? " · unavailable" : ""}</small>
             </span>
           </label>
         ))}
+        <CaptureFormatSelect key={selected} source={sources.find((s) => s.id === selected)} perform={perform}
+          onChange={(source) => setSources((items) => items.map((s) => s.id === source.id ? source : s))} />
         {diagnostics.map((d) => (
           <p className="form-note" key={d}>
             {d}

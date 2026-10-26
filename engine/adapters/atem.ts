@@ -140,7 +140,7 @@ export class AtemAdapter implements Adapter {
           if (!cam) {
             cam = {
               id: `atem-${this.host}-${cmd.source}`,
-              name: `Camera ${cmd.source}`,
+              name: this.inputName(cmd.source),
               vendor: "atem",
               address: this.host,
               model: "Blackmagic via ATEM",
@@ -161,7 +161,7 @@ export class AtemAdapter implements Adapter {
     });
     this.client.on("stateChanged", (state) => {
       for (const [id, c] of this.cameras) {
-        c.name = state.inputs[id]?.longName || `Camera ${id}`;
+        c.name = this.inputName(id);
         this.changed(c);
       }
       this.routingChanged();
@@ -174,6 +174,19 @@ export class AtemAdapter implements Adapter {
       }
       this.routingChanged();
     });
+    // atem-connection reconnects by itself; without this, cameras stay
+    // "disconnected" and refuse writes although the switcher is back.
+    this.client.on("connected", () => {
+      for (const [id, c] of this.cameras) {
+        c.status = "connected";
+        c.name = this.inputName(id);
+        this.changed(c);
+      }
+      this.routingChanged();
+    });
+  }
+  inputName(source: number) {
+    return this.client.state?.inputs[source]?.longName || `Camera ${source}`;
   }
   info() {
     return switcherInfo(
@@ -198,7 +211,10 @@ export class AtemAdapter implements Adapter {
         reject(e);
       });
     });
-    for (const c of this.cameras.values()) c.status = "connected";
+    for (const [id, c] of this.cameras) {
+      c.status = "connected";
+      c.name = this.inputName(id);
+    }
     for (const c of this.cameras.values())
       if (!c.controls.some((x) => x.id === "native"))
         c.controls.push({

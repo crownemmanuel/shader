@@ -6,7 +6,7 @@ The release targets are **Windows x64** (NSIS installer) and **Apple silicon mac
 
 ## On an installed computer
 
-The app checks for updates 20 seconds after startup and every six hours. Settings announces a new version. Open **Settings → App updates → Check for updates**, review the notes, then **Install … and restart**. Downloads and restarts require this action. Installation checks camera write locks and active preset recalls before and after downloading. Lock camera writes and wait for recalls to finish first. The updater also shuts its owned camera engine down gracefully before launching the installer, releasing its session lock. Development builds update from git.
+The app checks for updates 20 seconds after startup and every six hours. Settings announces a new version. Open **Settings → App updates → Check for updates**, review the notes, then **Install … and restart**. Downloads and restarts require this action. Installation checks in-flight camera writes and active preset recalls before and after downloading. Wait for camera changes and recalls to finish first. The updater also shuts its owned camera engine down gracefully before launching the installer, releasing its session lock. Development builds update from git.
 
 Updates retain the app identifier `studio.shader.desktop` and the engine settings in `~/.shader`. Camera connections restart; credentials held only in memory must be entered again.
 
@@ -16,7 +16,7 @@ Commit your changes on `main`, then:
 
 ```sh
 npm run release -- patch --notes "What changed"
-git push origin HEAD v0.1.1
+git push origin HEAD v0.1.2
 ```
 
 Use `minor`, `major`, or an explicit version instead of `patch`. The command synchronizes `package.json`, `package-lock.json`, `Cargo.toml`, and `Cargo.lock`, commits them, and creates an annotated tag. `tauri.conf.json` reads the version from `package.json`. `--dry-run` changes nothing. CI checks these files against the tag.
@@ -29,7 +29,7 @@ The user authorized the Sony Camera Remote SDK license for this application. Eac
 
 Windows network connections need no USB driver. Sony USB cameras may require the driver supplied with Sony’s SDK; the app does not install kernel drivers automatically. Hardware connection/readback still needs testing on the actual cameras.
 
-FFmpeg is fetched from the pinned sources and checksums in `scripts/fetch-ffmpeg.ts` and packaged as a sidecar on both platforms. Those builds include x264 under GPL v3; the upstream source for the pinned FFmpeg version is available at https://github.com/FFmpeg/FFmpeg/tree/n9.0.2, with build sources documented by Martin Riedl and gyan.dev. Capture devices still need the appropriate vendor device drivers; DeckLink capture needs a DeckLink-enabled FFmpeg override.
+FFmpeg is fetched from the pinned sources and checksums in `scripts/fetch-ffmpeg.ts` and packaged as a sidecar on both platforms. Those builds include x264 under GPL v3; the upstream source for the pinned FFmpeg version is available at https://github.com/FFmpeg/FFmpeg/tree/n9.0.2, with build sources documented by Martin Riedl and gyan.dev. Capture devices still need the appropriate vendor device drivers; Windows DeckLink capture uses a separate native helper built by `npm run build:decklink` and staged in `src-tauri/resources/decklink/`; the Tauri hooks build it automatically using MSVC and MIDL. Desktop Video remains a user-installed prerequisite. The release workflow runs the helper’s hardware-independent WIC JPEG self-test. Other platforms still need a DeckLink-enabled FFmpeg override. See `native/decklink/README.md`.
 
 ## Signing
 

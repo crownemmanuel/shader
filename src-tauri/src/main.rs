@@ -70,18 +70,14 @@ async fn camera_command(
 #[tauri::command]
 async fn prepare_update_restart(app: tauri::AppHandle) -> Result<(), String> {
     let status = camera_command("system_status".into(), serde_json::json!({})).await?;
-    let now = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .map_err(|e| e.to_string())?
-        .as_millis() as u64;
     let cameras = status["cameras"]
         .as_array()
         .ok_or("Camera state unavailable")?;
     if cameras
         .iter()
-        .any(|camera| camera["writeAccess"].as_u64().unwrap_or(u64::MAX) > now)
+        .any(|camera| camera["writing"].as_bool().unwrap_or(true))
     {
-        return Err("Lock camera writes before installing an update".into());
+        return Err("Wait for camera changes to finish before installing an update".into());
     }
     let jobs = status["presetJobs"]
         .as_array()
@@ -178,6 +174,13 @@ fn main() {
                     }
                 });
             }
+            let decklink_bridge = if cfg!(target_os = "windows") {
+                std::env::var_os("SHADER_DECKLINK_BRIDGE")
+                    .map(std::path::PathBuf::from)
+                    .unwrap_or(app.path().resource_dir()?.join("decklink/shader-decklink.exe"))
+            } else {
+                std::path::PathBuf::new()
+            };
             let (mut events, child) = app
                 .shell()
                 .sidecar("shader-engine")?
@@ -205,6 +208,7 @@ fn main() {
                             },
                         )),
                 )
+                .env("SHADER_DECKLINK_BRIDGE", decklink_bridge)
                 .spawn()?;
             *app.state::<EngineChild>().child.lock().unwrap() = Some(child);
             let handle = app.handle().clone();

@@ -1,0 +1,40 @@
+name: Windows DeckLink helper
+
+on:
+  pull_request:
+    paths:
+      - 'native/decklink/**'
+      - 'native/sony/third_party/**'
+      - 'engine/capture.ts'
+      - 'engine/decklink.ts'
+      - 'engine/tests/decklink.test.ts'
+      - 'engine/tests/fixtures/decklink-bridge.mjs'
+      - '.github/workflows/decklink.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+          cache: npm
+      - uses: ilammy/msvc-dev-cmd@v1
+      - run: npm ci
+      - name: Compile MSVC helper and test Windows JPEG encoding
+        run: npm run build:decklink
+      - name: Check app types and DeckLink process integration
+        run: |
+          npm run check
+          node --import tsx --test engine/tests/decklink.test.ts
+      - uses: actions/upload-artifact@v4
+        with:
+          name: shader-decklink-windows-x64
+          path: src-tauri/resources/decklink/
+          if-no-files-found: error

@@ -71,9 +71,19 @@ export interface Discovery {
 export interface CaptureSource {
   id: string;
   name: string;
-  kind: "avfoundation" | "decklink" | "dshow" | "v4l2";
+  // rtsp sources are derived from a connected camera's address, never registered by hand.
+  kind: "avfoundation" | "decklink" | "dshow" | "v4l2" | "rtsp";
   device: string;
   format?: string;
+  backend?: "decklink-sdk";
+  available?: boolean;
+  nativeName?: string;
+  model?: string;
+  connector?: number;
+  subdeviceIndex?: number;
+  profile?: string;
+  supportsAutoDetection?: boolean;
+  modes?: { code: string; name: string; width: number; height: number; fps: number }[];
 }
 export interface Frame {
   id: string;

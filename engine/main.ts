@@ -27,21 +27,24 @@ async function main() {
   if (await existing()) return;
   await mkdir(dataDirectory(), { recursive: true, mode: 0o700 });
   let release: () => Promise<void>;
-  try {
-    release = await lockfile.lock(dataDirectory(), {
-      stale: 10000,
-      update: 2000,
-      retries: 0,
-    });
-  } catch (e) {
-    if ((e as NodeJS.ErrnoException).code !== "ELOCKED") throw e;
-    for (let attempt = 0; attempt < 10; attempt++) {
-      await new Promise((r) => setTimeout(r, 300));
+  // Keep retrying past the 10 s stale window so a quick app restart takes over the old lock.
+  for (let attempt = 0; ; attempt++) {
+    try {
+      release = await lockfile.lock(dataDirectory(), {
+        stale: 10000,
+        update: 2000,
+        retries: 0,
+      });
+      break;
+    } catch (e) {
+      if ((e as NodeJS.ErrnoException).code !== "ELOCKED") throw e;
       if (await existing()) return;
+      if (attempt >= 40)
+        throw new Error(
+          "Another camera engine is starting or the previous lock has not expired. Retry shortly.",
+        );
+      await new Promise((r) => setTimeout(r, 300));
     }
-    throw new Error(
-      "Another camera engine is starting or the previous lock has not expired. Retry shortly.",
-    );
   }
   const engine = new Engine();
   await engine.init();

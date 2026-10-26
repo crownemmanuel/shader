@@ -292,6 +292,9 @@ export function shadePlan(
       available.find((a) => a.kind === "gain") ||
       available.find((a) => a.kind === "iso");
   let remaining = intent.brightness;
+  const visca =
+    baseline.vendor === "ptzoptics" ? viscaExposure(baseline) : undefined;
+  if (visca) remaining = visca.plan(remaining, changes);
   // Targets always derive from the anchor. Reversing the slider unwinds the same recipe.
   const adjustIris = () => {
     if (!iris || policy.preserveAperture) return;
@@ -346,12 +349,14 @@ export function shadePlan(
         ? Math.log2(actual / gain.value)
         : (actual - gain.value) / 6.0206;
   };
-  if (remaining >= 0) {
-    adjustIris();
-    adjustGain();
-  } else {
-    adjustGain();
-    adjustIris();
+  if (!visca) {
+    if (remaining >= 0) {
+      adjustIris();
+      adjustGain();
+    } else {
+      adjustGain();
+      adjustIris();
+    }
   }
   const warmth = available.find((a) => a.kind === "warmth"),
     tint = available.find((a) => a.kind === "tint");
@@ -366,11 +371,91 @@ export function shadePlan(
     requested: intent,
     remainingEV: Math.round(remaining * 100) / 100,
     supported: {
-      brightness: !!((iris && !policy.preserveAperture) || gain),
+      brightness: visca
+        ? visca.steps.length > 0
+        : !!((iris && !policy.preserveAperture) || gain),
       warmth: !!warmth,
       tint: !!tint,
     },
     policy,
-    note: "Iris first, then bounded gain/ISO. Darkening reduces gain first. Shutter and ND stay fixed. This is a requested adjustment, not a measurement of picture brightness.",
+    path: visca?.steps.map((s) => s.label),
+    note: visca
+      ? `VISCA ${visca.mode} exposure: ${visca.steps.map((s) => s.label).join(", then ") || "no adjustable position"}. About ${VISCA_EV_PER_STEP} stop per native step; the exact amount varies by model. Shutter stays fixed. This is a requested adjustment, not a measurement of picture brightness.`
+      : "Iris first, then bounded gain/ISO. Darkening reduces gain first. Shutter and ND stay fixed. This is a requested adjustment, not a measurement of picture brightness.",
+  };
+}
+
+// VISCA reports exposure as native indexes, not f-stops or dB. Sony-derived
+// tables step iris, gain and bright in roughly half-stop increments, so Simple
+// brightness walks whole native steps on whichever control the AE mode obeys.
+export const VISCA_EV_PER_STEP = 0.5;
+const VISCA_COMP_NEUTRAL = 7;
+interface ViscaStep {
+  control: Control;
+  label: string;
+  value: number;
+  min: number;
+  max: number;
+}
+export function viscaExposure(camera: Camera) {
+  const get = (id: string) => {
+    const c = camera.controls.find((c) => c.id === id);
+    return c?.writable && typeof c.value === "number" ? c : undefined;
+  };
+  const step = (id: string, label: string, min = 0, max?: number) => {
+    const c = get(id);
+    if (!c) return [];
+    const value = c.value as number,
+      hi = Math.min(max ?? Infinity, c.max ?? value);
+    return value >= min && value <= hi
+      ? [{ control: c, label, value, min, max: hi }]
+      : [];
+  };
+  const mode = get("exposure_mode")?.value,
+    compOn = get("exposure_compensation_mode"),
+    gainLimit = get("gain_limit")?.value as number | undefined;
+  let name = "unknown",
+    steps: ViscaStep[] = [],
+    extra: ShadeChange[] = [];
+  if (mode === 3) {
+    name = "Manual";
+    // Iris index 0 closes the lens; never walk into it.
+    steps = [...step("iris", "Iris", 1), ...step("gain", "Gain", 0, gainLimit)];
+  } else if (mode === 13) {
+    name = "Bright";
+    steps = step("bright", "Bright level");
+  } else if (mode === 0 || mode === 10 || mode === 11) {
+    name =
+      mode === 0 ? "Auto" : mode === 10 ? "Shutter priority" : "Iris priority";
+    steps = step("exposure_compensation", "Exposure compensation");
+    // Compensation that is switched off contributes nothing, so treat its
+    // stored level as neutral and switch it on before the first offset.
+    if (steps.length && compOn && compOn.value !== 2) {
+      steps[0].value = VISCA_COMP_NEUTRAL;
+      extra = [{ controlId: compOn.id, label: compOn.label, value: 2 }];
+    }
+  }
+  return {
+    mode: name,
+    steps,
+    plan(ev: number, changes: Map<string, ShadeChange>) {
+      let remaining = Math.round(ev / VISCA_EV_PER_STEP);
+      if (remaining && extra.length)
+        for (const e of extra) changes.set(e.controlId, e);
+      const order = remaining >= 0 ? steps : [...steps].reverse();
+      const targets = new Map<ViscaStep, number>();
+      for (const s of order) {
+        const target = clamp(s.value + remaining, s.min, s.max);
+        remaining -= target - s.value;
+        targets.set(s, target);
+      }
+      for (const s of steps)
+        changes.set(s.control.id, {
+          controlId: s.control.id,
+          label: s.control.label,
+          value: targets.get(s)!,
+        });
+      return remaining * VISCA_EV_PER_STEP;
+    },
   };
 }

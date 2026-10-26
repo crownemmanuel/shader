@@ -1,0 +1,2 @@
+# Preserve upstream SDK bytes for checksum verification, including on Windows.
+native/decklink/sdk/* -text -whitespace

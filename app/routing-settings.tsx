@@ -1,3 +1,4 @@
+import { CaptureFormatSelect } from "./capture-format";
 import React, { useState } from "react";
 import { Video, Radio, SlidersHorizontal } from "lucide-react";
 import type { Camera, CaptureSource } from "../engine/types";
@@ -141,8 +142,10 @@ function RouteForm({
         <select value={source} onChange={(e) => setSource(e.target.value)}>
           <option value="">No capture input</option>
           {sources.map((s) => (
-            <option key={s.id} value={s.id}>
-              {s.name} · {s.kind}
+            <option key={s.id} value={s.id} disabled={s.available === false}>
+              {s.name} ·{" "}
+              {s.backend === "decklink-sdk" ? "Blackmagic DeckLink" : s.kind}
+              {s.available === false ? " · unavailable" : ""}
             </option>
           ))}
           {source && !sources.some((s) => s.id === source) && (
@@ -150,6 +153,16 @@ function RouteForm({
           )}
         </select>
       </label>
+      <CaptureFormatSelect
+        key={source}
+        source={sources.find((s) => s.id === source)}
+        perform={perform}
+        onChange={(updated) =>
+          setSources((items) =>
+            items.map((s) => (s.id === updated.id ? updated : s)),
+          )
+        }
+      />
       <div className="form-row">
         <button
           disabled={busy}

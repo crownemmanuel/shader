@@ -32,8 +32,7 @@ export function PresetLibrary({
     [preview, setPreview] = useState<any>(),
     [error, setError] = useState("");
   const [busy, setBusy] = useState(false),
-    [fade, setFade] = useState(0),
-    [allowLive, setAllowLive] = useState(false);
+    [fade, setFade] = useState(0);
   const [name, setName] = useState(""),
     [description, setDescription] = useState(""),
     [attachLighting, setAttachLighting] = useState(true);
@@ -420,14 +419,6 @@ export function PresetLibrary({
                   {preview.blockers.map((b: string) => (
                     <p key={b}>{b}</p>
                   ))}
-                  <label className="check-label">
-                    <input
-                      type="checkbox"
-                      checked={allowLive}
-                      onChange={(e) => setAllowLive(e.target.checked)}
-                    />
-                    Allow changes to On Air / unknown-tally cameras
-                  </label>
                   <button
                     disabled={busy}
                     onClick={() =>
@@ -440,10 +431,8 @@ export function PresetLibrary({
                                 camera.vendor !== "demo",
                             )
                           )
-                            await perform("camera_arm", {
+                            await perform("camera_unlock", {
                               cameraId: c.cameraId,
-                              seconds: 300,
-                              allowLive,
                             });
                         setPreview(
                           await command("preset_preview", {
@@ -453,7 +442,7 @@ export function PresetLibrary({
                       })
                     }
                   >
-                    Enable selected cameras for 5 minutes
+                    Unlock these cameras
                   </button>
                 </div>
               )}

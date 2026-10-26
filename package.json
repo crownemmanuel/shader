@@ -17,7 +17,8 @@
     "build:sony": "node native/sony/build.mjs",
     "release": "node scripts/release.mjs",
     "build:installer": "npm run build:sony && npm run bundle:engine && tauri build --config src-tauri/tauri.unsigned.conf.json",
-    "fetch:ffmpeg": "node scripts/fetch-ffmpeg.ts"
+    "fetch:ffmpeg": "node scripts/fetch-ffmpeg.ts",
+    "build:decklink": "node native/decklink/build.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.32.2",

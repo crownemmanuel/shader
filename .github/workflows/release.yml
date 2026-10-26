@@ -135,6 +135,8 @@ jobs:
         if: runner.os == 'Windows'
       - name: Fetch pinned Sony SDK and build native bridge
         run: npm run build:sony
+      - name: Build and self-test native DeckLink capture
+        run: npm run build:decklink
       - run: npm run fetch:ffmpeg
       - run: npm run bundle:engine
       - run: npm run check

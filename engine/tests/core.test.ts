@@ -11,7 +11,7 @@ import {
   CameraControlUpdateCommand,
   CameraControlCommand,
 } from "atem-connection/dist/commands/CameraControlCommand.js";
-import { fromAtem, nativeCommand } from "../adapters/atem.js";
+import { AtemAdapter, fromAtem, nativeCommand } from "../adapters/atem.js";
 import { ViscaTransport, nibbles, parseReply } from "../adapters/ptzoptics.js";
 import { startServer } from "../server.js";
 import { toMcpResult } from "../mcp.js";
@@ -91,20 +91,24 @@ test("concurrent writes using the same revision cannot silently overwrite each o
     await f.close();
   }
 });
-test("live and unknown tally require explicit allowLive; locks expire", async () => {
+test("cameras are writable until locked, including live and unknown tally; locks persist", async () => {
   const f = await fixture();
   try {
     const c = f.engine.camera("demo-studio");
     c.vendor = "ptzoptics";
     c.status = "connected";
     c.tally = "unknown";
-    assert.throws(() => f.engine.guard(c), /locked/);
-    f.engine.arm(c.id, 60, false, "ui");
-    assert.throws(() => f.engine.guard(c), /unknown/);
-    f.engine.arm(c.id, 60, true, "ui");
     assert.doesNotThrow(() => f.engine.guard(c));
-    f.engine.arms.get(c.id)!.until = 0;
+    c.tally = "program";
+    assert.doesNotThrow(() => f.engine.guard(c));
+    await f.engine.lock(c.id, true, "ui");
     assert.throws(() => f.engine.guard(c), /locked/);
+    assert.equal(f.engine.list().find((x) => x.id === c.id)!.locked, true);
+    const restarted = new Engine(f.engine.directory);
+    await restarted.init();
+    assert.ok(restarted.locks.has(c.id));
+    await f.engine.lock(c.id, false, "ui");
+    assert.doesNotThrow(() => f.engine.guard(c));
   } finally {
     await f.close();
   }
@@ -147,6 +151,26 @@ test("ATEM CCdP fixture decodes correctly and CCmd preserves native vector order
   assert.equal(packet[4], 128);
   assert.equal(packet.readInt16BE(16), -1024);
   assert.equal(packet.readUInt16BE(8), 4);
+});
+test("ATEM cameras return to connected when the switcher reconnects on its own", () => {
+  const changed: string[] = [];
+  const atem = new AtemAdapter((c) => changed.push(c.status));
+  atem.cameras.set(4, {
+    id: "atem-test-4",
+    name: "Cam4",
+    vendor: "atem",
+    model: "Blackmagic via ATEM",
+    address: "test",
+    status: "connected",
+    revision: 0,
+    tally: "program",
+    controls: [],
+  });
+  atem.client.emit("disconnected");
+  assert.equal(atem.cameras.get(4)!.status, "disconnected");
+  atem.client.emit("connected");
+  assert.equal(atem.cameras.get(4)!.status, "connected");
+  assert.deepEqual(changed, ["disconnected", "connected"]);
 });
 test("VISCA handles split frames, ACK then completion, and camera error replies", async () => {
   const requests: Buffer[] = [];
@@ -296,4 +320,97 @@ test("ATEM native commands preserve 64-bit values and count UTF-8 bytes", () => 
       }),
     /range/,
   );
+});
+test("change feed wakes waiters and Simple sessions detect outside edits with fixed-point tolerance", async () => {
+  const f = await fixture();
+  try {
+    const now = f.engine.changeVersion;
+    assert.deepEqual(await f.engine.waitForChange(now - 1, 1000), {
+      version: now,
+    });
+    const waiting = f.engine.waitForChange(now, 5000);
+    f.engine.emit("change");
+    assert.equal((await waiting).version, now + 1);
+    assert.equal((await f.engine.waitForChange(now + 1, 100)).version, now + 1);
+
+    const session = f.engine.beginShade("demo-studio");
+    const shade = () =>
+      (f.engine.list().find((c) => c.id === "demo-studio") as any).shade;
+    assert.deepEqual(shade(), { sessionId: session.sessionId, synced: true });
+    const gain = f.engine
+      .camera("demo-studio")
+      .controls.find((c) => c.id === "gain_db")!;
+    gain.value = Number(gain.value) + 1 / 4096;
+    assert.equal(shade().synced, true);
+    gain.value = Number(gain.value) + 3;
+    assert.equal(shade().synced, false);
+    assert.throws(
+      () =>
+        f.engine.planShade("demo-studio", session.sessionId, {
+          brightness: 0,
+          warmth: 0,
+          tint: 0,
+        }),
+      /settings changed/,
+    );
+  } finally {
+    await f.close();
+  }
+});
+test("live control writes skip the revision check and the activity log; final writes are logged", async () => {
+  const f = await fixture();
+  try {
+    const run = (args: Record<string, unknown>) =>
+      execute(
+        commands(f.engine),
+        "control_set",
+        { cameraId: "demo-studio", controlId: "gain_db", ...args },
+        "ui",
+      );
+    const logged = () =>
+      f.engine.audit.filter((a) => a.operation === "control_set").length;
+    const before = logged();
+    for (const value of [1, 2, 3]) await run({ value, live: true });
+    assert.equal(logged(), before);
+    await run({ value: 4 });
+    assert.equal(logged(), before + 1);
+    assert.equal(
+      f.engine.camera("demo-studio").controls.find((c) => c.id === "gain_db")!
+        .value,
+      4,
+    );
+    await assert.rejects(
+      run({ value: 5, expectedRevision: 0 }),
+      /Camera state changed/,
+    );
+  } finally {
+    await f.close();
+  }
+});
+test("hidden cameras persist, stay connected and can be set before an input reports", async () => {
+  const f = await fixture();
+  try {
+    await execute(
+      commands(f.engine),
+      "cameras_hide",
+      { cameraIds: ["demo-studio", "atem-172.16.10.10-15"], hidden: true },
+      "ui",
+    );
+    const listed = f.engine.list().find((c) => c.id === "demo-studio")!;
+    assert.equal(listed.hidden, true);
+    assert.doesNotThrow(() => f.engine.camera("demo-studio"));
+    const restarted = new Engine(f.engine.directory);
+    await restarted.init();
+    assert.deepEqual([...restarted.hidden].sort(), [
+      "atem-172.16.10.10-15",
+      "demo-studio",
+    ]);
+    await f.engine.hide(["demo-studio"], false, "ui");
+    assert.equal(
+      f.engine.list().find((c) => c.id === "demo-studio")!.hidden,
+      false,
+    );
+  } finally {
+    await f.close();
+  }
 });

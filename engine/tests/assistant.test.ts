@@ -11,6 +11,7 @@ test("assistant receives selected camera context and blocks tools or camera IDs 
   const engine = new Engine(dir);
   await engine.init();
   await engine.connect({ vendor: "demo", host: "local" });
+  await engine.lock("demo-studio", true, "ui");
   let calls = 0;
   const requests: any[] = [];
   const server = http.createServer(async (req, res) => {
@@ -35,7 +36,7 @@ test("assistant receives selected camera context and blocks tools or camera IDs 
                     content: null,
                     tool_calls: [
                       tool("a", "camera_get", { cameraId: "other-camera" }),
-                      tool("b", "camera_arm", { cameraId: "demo-studio" }),
+                      tool("b", "camera_unlock", { cameraId: "demo-studio" }),
                       tool("c", "camera_get", { cameraId: "demo-studio" }),
                     ],
                   }
@@ -64,7 +65,7 @@ test("assistant receives selected camera context and blocks tools or camera IDs 
       [false, false, true],
     );
     assert.match(requests[0].messages[0].content, /demo-studio/);
-    assert.equal(engine.arms.size, 0);
+    assert.ok(engine.locks.has("demo-studio"));
     assert.equal(
       requests[1].messages.filter((m: any) => m.role === "tool").length,
       3,
