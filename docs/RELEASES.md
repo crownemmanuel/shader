@@ -6,7 +6,7 @@ The release targets are **Windows x64** (NSIS installer) and **Apple silicon mac
 
 ## On an installed computer
 
-The app checks for updates 20 seconds after startup and every six hours. Settings announces a new version. Open **Settings → App updates → Check for updates**, review the notes, then **Install … and restart**. Downloads and restarts require this action. Installation checks camera write locks and active preset recalls before and after downloading. Lock camera writes and wait for recalls to finish first. Development builds update from git.
+The app checks for updates 20 seconds after startup and every six hours. Settings announces a new version. Open **Settings → App updates → Check for updates**, review the notes, then **Install … and restart**. Downloads and restarts require this action. Installation checks camera write locks and active preset recalls before and after downloading. Lock camera writes and wait for recalls to finish first. The updater also shuts its owned camera engine down gracefully before launching the installer, releasing its session lock. Development builds update from git.
 
 Updates retain the app identifier `studio.shader.desktop` and the engine settings in `~/.shader`. Camera connections restart; credentials held only in memory must be entered again.
 

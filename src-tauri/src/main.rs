@@ -66,6 +66,72 @@ async fn camera_command(
     }
     Ok(value["result"].clone())
 }
+// The Windows updater exits directly after starting NSIS, so stop the owned engine first.
+#[tauri::command]
+async fn prepare_update_restart(app: tauri::AppHandle) -> Result<(), String> {
+    let status = camera_command("system_status".into(), serde_json::json!({})).await?;
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map_err(|e| e.to_string())?
+        .as_millis() as u64;
+    let cameras = status["cameras"]
+        .as_array()
+        .ok_or("Camera state unavailable")?;
+    if cameras
+        .iter()
+        .any(|camera| camera["writeAccess"].as_u64().unwrap_or(u64::MAX) > now)
+    {
+        return Err("Lock camera writes before installing an update".into());
+    }
+    let jobs = status["presetJobs"]
+        .as_array()
+        .ok_or("Preset state unavailable")?;
+    if jobs
+        .iter()
+        .any(|job| matches!(job["status"].as_str(), Some("queued" | "running")))
+    {
+        return Err("Wait for camera preset recalls to finish before installing".into());
+    }
+    let session = session()?;
+    let owned = app
+        .state::<EngineChild>()
+        .child
+        .lock()
+        .unwrap()
+        .as_ref()
+        .map(|child| child.pid() == session.pid)
+        .unwrap_or(false);
+    if !owned {
+        return Err("Restart Shader with its own camera engine before installing an update".into());
+    }
+    let client = reqwest::Client::builder()
+        .no_proxy()
+        .timeout(std::time::Duration::from_secs(15))
+        .build()
+        .map_err(|e| e.to_string())?;
+    client
+        .post(format!("{}/shutdown", session.url))
+        .bearer_auth(session.token)
+        .send()
+        .await
+        .map_err(|_| "Could not stop camera engine safely")?
+        .error_for_status()
+        .map_err(|_| "Camera engine refused shutdown")?;
+    for _ in 0..100 {
+        if app.state::<EngineChild>().terminated.load(Ordering::SeqCst) {
+            app.state::<EngineChild>()
+                .exit_ready
+                .store(true, Ordering::SeqCst);
+            return Ok(());
+        }
+        let _ = tauri::async_runtime::spawn_blocking(|| {
+            std::thread::sleep(std::time::Duration::from_millis(50))
+        })
+        .await;
+    }
+    Err("Camera engine did not stop in time. Restart Shader before trying again.".into())
+}
+
 fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
@@ -166,7 +232,10 @@ fn main() {
             });
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![camera_command])
+        .invoke_handler(tauri::generate_handler![
+            camera_command,
+            prepare_update_restart
+        ])
         .build(tauri::generate_context!())
         .expect("Could not launch Shader")
         .run(|app, event| match event {

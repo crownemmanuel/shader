@@ -1,3 +1,4 @@
+import appPackage from "../package.json";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { commands } from "./commands.js";
@@ -30,7 +31,7 @@ export function toMcpResult(result: any): any {
   };
 }
 export async function startMcp() {
-  const server = new McpServer({ name: "shader", version: "0.1.0" });
+  const server = new McpServer({ name: "shader", version: appPackage.version });
   const registry = commands(new Engine());
   for (const [name, command] of Object.entries(registry))
     server.registerTool(

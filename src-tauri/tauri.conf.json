@@ -4,7 +4,7 @@
   "version": "../package.json",
   "identifier": "studio.shader.desktop",
   "build": {
-    "beforeDevCommand": "npm run bundle:engine && npm run dev",
+    "beforeDevCommand": "npm run fetch:ffmpeg && npm run bundle:engine && npm run dev",
     "devUrl": "http://127.0.0.1:1420",
     "beforeBuildCommand": "node scripts/fetch-ffmpeg.ts && npm run build",
     "frontendDist": "../dist"

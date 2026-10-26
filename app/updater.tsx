@@ -1,9 +1,10 @@
 import { useEffect, useSyncExternalStore } from "react";
-import { isTauri } from "@tauri-apps/api/core";
+import { invoke, isTauri } from "@tauri-apps/api/core";
 import { getVersion } from "@tauri-apps/api/app";
 import { check, type Update } from "@tauri-apps/plugin-updater";
 import { relaunch } from "@tauri-apps/plugin-process";
 import { command } from "./api";
+import "./updater.css";
 import { updateInstallBlocker } from "../engine/update-safety";
 
 type State = {
@@ -100,10 +101,11 @@ async function installUpdate(version: string) {
     const lateBlocker = await updateBlocker();
     if (lateBlocker) throw new Error(lateBlocker);
     set({ phase: "installing" });
+    await invoke("prepare_update_restart");
     await update.install();
     await relaunch();
   } catch (error) {
-    set({ phase: "error", error: String(error) });
+    set({ phase: "error", error: `${String(error)}. If the engine stopped, restart Shader before trying again.` });
   }
 }
 
@@ -132,7 +134,7 @@ export function AppUpdates() {
       </section>
     );
   return (
-    <section className="settings-section" aria-label="App updates">
+    <section className="app-updates" aria-label="App updates">
       <h3>App updates{value.current ? ` · ${value.current}` : ""}</h3>
       <p>
         Shader checks for signed releases automatically. Installing restarts the

@@ -1,0 +1,5 @@
+.app-updates { display: block; border-bottom: 1px solid var(--border, #414448); padding-bottom: 20px; margin-bottom: 20px; }
+.app-updates h3 { margin: 0 0 8px; font-size: 15px; }
+.app-updates p { line-height: 1.5; margin: 8px 0 14px; }
+.app-updates pre { font: inherit; }
+.app-updates progress { width: 100%; }

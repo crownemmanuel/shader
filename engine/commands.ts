@@ -1,3 +1,4 @@
+import appPackage from "../package.json";
 import { z } from "zod";
 import { isSea } from "node:sea";
 import path from "node:path";
@@ -29,7 +30,7 @@ export function commands(engine: Engine) {
       schema: z.object({}).strict(),
       readOnly: true,
       run: () => ({
-        version: "0.1.0",
+        version: appPackage.version,
         discovered: engine.discovery.list(),
         mcpConfig: {
           mcpServers: {
