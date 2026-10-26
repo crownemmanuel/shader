@@ -1,0 +1,263 @@
+
+=== Camera 1  (Cam1)   [non-default: lift, gamma, gain, contrast, hue_sat]
+  White balance : 3900 K, tint -26
+  Master gain   : 12 dB
+  Shutter       : 41667 us (1/24)
+  Iris          : f/1.8
+  Lift          : R+0.004 G-0.020 B-0.016 Y-0.052
+  Gamma         : R+0.020 G+0.049 B+0.100 Y+0.000
+  Gain          : R+0.894 G+1.019 B+0.979 Y+1.037
+  Offset        : R+0.000 G+0.000 B+0.000 Y+0.000
+  Contrast      : pivot 0.84, adjust 0.88
+  Hue / Sat     : hue 0.0, sat 0.82
+  Luma mix      : 1.0
+
+=== Camera 2  (spoilt)   [non-default: lift, gamma, gain, contrast, hue_sat]
+  White balance : 4900 K, tint -18
+  Master gain   : -6 dB
+  Shutter       : 33333 us (1/30)
+  Iris          : f/2.8
+  Lift          : R+0.004 G-0.020 B-0.016 Y-0.016
+  Gamma         : R+0.020 G+0.049 B+0.100 Y+0.000
+  Gain          : R+0.865 G+1.018 B+0.979 Y+0.897
+  Offset        : R+0.000 G+0.000 B+0.000 Y+0.000
+  Contrast      : pivot 0.17, adjust 1.0
+  Hue / Sat     : hue 0.0, sat 0.78
+  Luma mix      : 1.0
+
+=== Camera 3  (Cam3)   [non-default: lift, gamma, gain, contrast, hue_sat]
+  White balance : 4900 K, tint -18
+  Master gain   : 2 dB
+  Shutter       : 20000 us (1/50)
+  Iris          : f/1.7
+  Lift          : R+0.218 G+0.102 B+0.091 Y-0.099
+  Gamma         : R-0.258 G+0.049 B+0.100 Y+0.000
+  Gain          : R+0.839 G+0.979 B+1.015 Y+1.051
+  Offset        : R+0.000 G+0.000 B+0.000 Y+0.000
+  Contrast      : pivot 0.5, adjust 1.06
+  Hue / Sat     : hue 0.0, sat 1.34
+  Luma mix      : 1.0
+  Other         : {'0.5': []}
+
+=== Camera 4  (Cam4)   [non-default: lift, gamma, gain, contrast, hue_sat]
+  White balance : 5400 K, tint -28
+  Master gain   : 10 dB
+  Shutter       : 20000 us (1/50)
+  Iris          : f/4.0
+  Lift          : R+0.000 G+0.000 B+0.000 Y-0.043
+  Gamma         : R+0.000 G+0.049 B+0.100 Y+0.000
+  Gain          : R+0.780 G+0.971 B+1.015 Y+1.292
+  Offset        : R+0.000 G+0.000 B+0.000 Y+0.000
+  Contrast      : pivot 0.5, adjust 1.1
+  Hue / Sat     : hue 0.0, sat 1.44
+  Luma mix      : 1.0
+  Other         : {'0.1': []}
+
+=== Camera 5  (ROV 6)   [non-default: lift, gamma, gain, contrast, luma_mix, hue_sat]
+  White balance : 5600 K, tint +0
+  Master gain   : 4 dB
+  Shutter       : 33333 us (1/30)
+  Iris          : f/22.3
+  Lift          : R-0.055 G-0.022 B+0.003 Y-0.116
+  Gamma         : R-0.017 G+0.049 B+0.100 Y+0.000
+  Gain          : R+0.947 G+1.003 B+1.127 Y+1.207
+  Offset        : R+0.000 G+0.000 B+0.000 Y+0.000
+  Contrast      : pivot 0.75, adjust 1.14
+  Hue / Sat     : hue 0.0, sat 1.04
+  Luma mix      : 0.4
+
+=== Camera 6  (Cam2)   [non-default: lift, gamma, gain, contrast, hue_sat]
+  White balance : 4500 K, tint +0
+  Master gain   : -2 dB
+  Shutter       : 20000 us (1/50)
+  Iris          : f/1.7
+  Lift          : R+0.137 G+0.088 B+0.028 Y-0.132
+  Gamma         : R-0.258 G+0.049 B+0.100 Y+0.000
+  Gain          : R+0.892 G+0.994 B+1.031 Y+1.219
+  Offset        : R+0.000 G+0.000 B+0.000 Y+0.000
+  Contrast      : pivot 0.5, adjust 1.2
+  Hue / Sat     : hue 0.0, sat 1.2
+  Luma mix      : 1.0
+  Other         : {'1.3': [], '0.1': []}
+
+=== Camera 7  (Crane 9)   [non-default: lift, gamma, gain, contrast, hue_sat]
+  White balance : 5600 K, tint +0
+  Master gain   : 0 dB
+  Shutter       : 20000 us (1/50)
+  Iris          : f/4.3
+  Lift          : R+0.137 G+0.088 B+0.130 Y-0.144
+  Gamma         : R-0.258 G+0.049 B+0.100 Y+0.000
+  Gain          : R+0.895 G+0.992 B+0.966 Y+1.171
+  Offset        : R+0.000 G+0.000 B+0.000 Y+0.000
+  Contrast      : pivot 0.5, adjust 1.2
+  Hue / Sat     : hue 0.0, sat 1.06
+  Luma mix      : 1.0
+
+=== Camera 8  (PTZ 10)   [non-default: lift, gamma, gain, contrast, hue_sat]
+  White balance : 5600 K, tint +0
+  Master gain   : 0 dB
+  Shutter       : 20000 us (1/50)
+  Iris          : f/6.2
+  Lift          : R+0.137 G+0.088 B+0.130 Y-0.144
+  Gamma         : R-0.258 G+0.049 B+0.100 Y+0.000
+  Gain          : R+0.895 G+0.992 B+0.966 Y+1.171
+  Offset        : R+0.000 G+0.000 B+0.000 Y+0.000
+  Contrast      : pivot 0.5, adjust 1.2
+  Hue / Sat     : hue 0.0, sat 1.06
+  Luma mix      : 1.0
+
+=== Camera 9  (PTZ 11)   [non-default: lift, gamma, gain, contrast, hue_sat]
+  White balance : 5600 K, tint +0
+  Master gain   : 0 dB
+  Shutter       : 20000 us (1/50)
+  Iris          : f/1.7
+  Lift          : R+0.137 G+0.088 B+0.130 Y-0.144
+  Gamma         : R-0.258 G+0.049 B+0.100 Y+0.000
+  Gain          : R+0.895 G+0.992 B+0.966 Y+1.171
+  Offset        : R+0.000 G+0.000 B+0.000 Y+0.000
+  Contrast      : pivot 0.5, adjust 1.2
+  Hue / Sat     : hue 0.0, sat 1.06
+  Luma mix      : 1.0
+
+=== Camera 10  (Camera 10)   [non-default: lift, gamma, gain, contrast, hue_sat]
+  White balance : 5600 K, tint +0
+  Master gain   : 0 dB
+  Shutter       : 20000 us (1/50)
+  Iris          : f/6.2
+  Lift          : R+0.137 G+0.088 B+0.130 Y-0.144
+  Gamma         : R-0.258 G+0.049 B+0.100 Y+0.000
+  Gain          : R+0.895 G+0.992 B+0.966 Y+1.171
+  Offset        : R+0.000 G+0.000 B+0.000 Y+0.000
+  Contrast      : pivot 0.5, adjust 1.2
+  Hue / Sat     : hue 0.0, sat 1.06
+  Luma mix      : 1.0
+
+=== Camera 11  (ServerRoom)   [non-default: lift, gamma, gain, contrast, hue_sat]
+  White balance : 5600 K, tint +0
+  Master gain   : 0 dB
+  Shutter       : 20000 us (1/50)
+  Iris          : f/6.2
+  Lift          : R+0.137 G+0.088 B+0.130 Y-0.144
+  Gamma         : R-0.258 G+0.049 B+0.100 Y+0.000
+  Gain          : R+0.895 G+0.992 B+0.966 Y+1.171
+  Offset        : R+0.000 G+0.000 B+0.000 Y+0.000
+  Contrast      : pivot 0.5, adjust 1.2
+  Hue / Sat     : hue 0.0, sat 1.06
+  Luma mix      : 1.0
+
+=== Camera 12  (Camera 12)   [non-default: lift, gamma, gain, contrast, hue_sat]
+  White balance : 5600 K, tint +0
+  Master gain   : 0 dB
+  Shutter       : 20000 us (1/50)
+  Iris          : f/6.2
+  Lift          : R+0.137 G+0.088 B+0.130 Y-0.144
+  Gamma         : R-0.258 G+0.049 B+0.100 Y+0.000
+  Gain          : R+0.895 G+0.992 B+0.966 Y+1.171
+  Offset        : R+0.000 G+0.000 B+0.000 Y+0.000
+  Contrast      : pivot 0.5, adjust 1.2
+  Hue / Sat     : hue 0.0, sat 1.06
+  Luma mix      : 1.0
+
+=== Camera 13  (ROV 5)   [non-default: lift, gamma, gain, contrast, hue_sat]
+  White balance : 5600 K, tint +0
+  Master gain   : 0 dB
+  Shutter       : 20000 us (1/50)
+  Iris          : f/6.2
+  Lift          : R+0.137 G+0.088 B+0.130 Y-0.144
+  Gamma         : R-0.258 G+0.049 B+0.100 Y+0.000
+  Gain          : R+0.895 G+0.992 B+0.966 Y+1.171
+  Offset        : R+0.000 G+0.000 B+0.000 Y+0.000
+  Contrast      : pivot 0.5, adjust 1.2
+  Hue / Sat     : hue 0.0, sat 1.06
+  Luma mix      : 1.0
+
+=== Camera 14  (ROV-7)   [non-default: lift, gamma, gain, contrast, hue_sat]
+  White balance : 5600 K, tint +0
+  Master gain   : 0 dB
+  Shutter       : 20000 us (1/50)
+  Iris          : f/6.2
+  Lift          : R+0.137 G+0.088 B+0.130 Y-0.144
+  Gamma         : R-0.258 G+0.049 B+0.100 Y+0.000
+  Gain          : R+0.895 G+0.992 B+0.966 Y+1.171
+  Offset        : R+0.000 G+0.000 B+0.000 Y+0.000
+  Contrast      : pivot 0.5, adjust 1.2
+  Hue / Sat     : hue 0.0, sat 1.06
+  Luma mix      : 1.0
+
+=== Camera 15  (MEDIA)   [non-default: lift, gamma, gain, contrast, hue_sat]
+  White balance : 5600 K, tint +0
+  Master gain   : 0 dB
+  Shutter       : 20000 us (1/50)
+  Iris          : f/6.2
+  Lift          : R+0.137 G+0.088 B+0.130 Y-0.144
+  Gamma         : R-0.258 G+0.049 B+0.100 Y+0.000
+  Gain          : R+0.895 G+0.992 B+0.966 Y+1.171
+  Offset        : R+0.000 G+0.000 B+0.000 Y+0.000
+  Contrast      : pivot 0.5, adjust 1.2
+  Hue / Sat     : hue 0.0, sat 1.06
+  Luma mix      : 1.0
+
+=== Camera 16  (LYRICS)   [non-default: lift, gamma, gain, contrast, hue_sat]
+  White balance : 5600 K, tint +0
+  Master gain   : 0 dB
+  Shutter       : 20000 us (1/50)
+  Iris          : f/6.2
+  Lift          : R+0.137 G+0.088 B+0.130 Y-0.144
+  Gamma         : R-0.258 G+0.049 B+0.100 Y+0.000
+  Gain          : R+0.895 G+0.992 B+0.966 Y+1.171
+  Offset        : R+0.000 G+0.000 B+0.000 Y+0.000
+  Contrast      : pivot 0.5, adjust 1.2
+  Hue / Sat     : hue 0.0, sat 1.06
+  Luma mix      : 1.0
+
+=== Camera 17  (ME1s)   [non-default: lift, gamma, gain, contrast, hue_sat]
+  White balance : 5600 K, tint +0
+  Master gain   : 0 dB
+  Shutter       : 20000 us (1/50)
+  Iris          : f/6.2
+  Lift          : R+0.137 G+0.088 B+0.130 Y-0.144
+  Gamma         : R-0.258 G+0.049 B+0.100 Y+0.000
+  Gain          : R+0.895 G+0.992 B+0.966 Y+1.171
+  Offset        : R+0.000 G+0.000 B+0.000 Y+0.000
+  Contrast      : pivot 0.5, adjust 1.2
+  Hue / Sat     : hue 0.0, sat 1.06
+  Luma mix      : 1.0
+
+=== Camera 18  (CananLand)   [non-default: lift, gamma, gain, contrast, hue_sat]
+  White balance : 5600 K, tint +0
+  Master gain   : 0 dB
+  Shutter       : 20000 us (1/50)
+  Iris          : f/6.2
+  Lift          : R+0.137 G+0.088 B+0.130 Y-0.144
+  Gamma         : R-0.258 G+0.049 B+0.100 Y+0.000
+  Gain          : R+0.895 G+0.992 B+0.966 Y+1.171
+  Offset        : R+0.000 G+0.000 B+0.000 Y+0.000
+  Contrast      : pivot 0.5, adjust 1.2
+  Hue / Sat     : hue 0.0, sat 1.06
+  Luma mix      : 1.0
+
+=== Camera 19  (IMAG SCPT)   [non-default: lift, gamma, gain, contrast, hue_sat]
+  White balance : 5600 K, tint +0
+  Master gain   : 0 dB
+  Shutter       : 20000 us (1/50)
+  Iris          : f/6.2
+  Lift          : R+0.137 G+0.088 B+0.130 Y-0.144
+  Gamma         : R-0.258 G+0.049 B+0.100 Y+0.000
+  Gain          : R+0.895 G+0.992 B+0.966 Y+1.171
+  Offset        : R+0.000 G+0.000 B+0.000 Y+0.000
+  Contrast      : pivot 0.5, adjust 1.2
+  Hue / Sat     : hue 0.0, sat 1.06
+  Luma mix      : 1.0
+
+=== Camera 20  (Camera 20)   [non-default: lift, gamma, gain, contrast, hue_sat]
+  White balance : 5600 K, tint +0
+  Master gain   : 0 dB
+  Shutter       : 20000 us (1/50)
+  Iris          : f/1.7
+  Lift          : R+0.137 G+0.088 B+0.130 Y-0.144
+  Gamma         : R-0.258 G+0.049 B+0.100 Y+0.000
+  Gain          : R+0.895 G+0.992 B+0.966 Y+1.171
+  Offset        : R+0.000 G+0.000 B+0.000 Y+0.000
+  Contrast      : pivot 0.5, adjust 1.2
+  Hue / Sat     : hue 0.0, sat 1.06
+  Luma mix      : 1.0

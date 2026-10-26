@@ -1,0 +1,14 @@
+node_modules/
+dist/
+target/
+src-tauri/target/
+src-tauri/binaries/*
+!src-tauri/binaries/.gitkeep
+.env*
+!.env.example
+.shader/
+*.log
+.DS_Store
+native/sony/vendor/
+native/sony/build/
+src-tauri/resources/sony/
