@@ -183,23 +183,27 @@ fn main() {
                 .sidecar("shader-engine")?
                 .env(
                     "SHADER_FFMPEG",
-                    std::env::current_exe()?.with_file_name(if cfg!(target_os = "windows") {
-                        "ffmpeg.exe"
-                    } else {
-                        "ffmpeg"
-                    }),
+                    std::env::var_os("SHADER_FFMPEG")
+                        .map(std::path::PathBuf::from)
+                        .unwrap_or(std::env::current_exe()?.with_file_name(
+                            if cfg!(target_os = "windows") {
+                                "ffmpeg.exe"
+                            } else {
+                                "ffmpeg"
+                            },
+                        )),
                 )
                 .env(
                     "SHADER_SONY_BRIDGE",
-                    app.path()
-                        .resource_dir()?
-                        .join(if cfg!(target_os = "windows") {
-                            "sony/shader-sony.exe"
-                        } else {
-                            "sony/shader-sony"
-                        })
-                        .to_string_lossy()
-                        .to_string(),
+                    std::env::var_os("SHADER_SONY_BRIDGE")
+                        .map(std::path::PathBuf::from)
+                        .unwrap_or(app.path().resource_dir()?.join(
+                            if cfg!(target_os = "windows") {
+                                "sony/shader-sony.exe"
+                            } else {
+                                "sony/shader-sony"
+                            },
+                        )),
                 )
                 .spawn()?;
             *app.state::<EngineChild>().child.lock().unwrap() = Some(child);
