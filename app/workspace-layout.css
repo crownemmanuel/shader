@@ -78,7 +78,10 @@
   height: 100%;
   justify-self: center;
   width: 100%;
-  max-width: min(100%, calc((100cqh - 84px - var(--bank-reserve, 0px)) * 16 / 9));
+  max-width: min(
+    100%,
+    calc((100cqh - 84px - var(--bank-reserve, 0px)) * 16 / 9)
+  );
   display: flex;
   flex-direction: column;
 }
@@ -695,7 +698,9 @@ dialog.camera-button-editor {
   padding: 0;
   border-radius: 8px;
   border: 1px solid #0006;
-  box-shadow: inset 0 1px 0 #ffffff40, 0 1px 2px #0008;
+  box-shadow:
+    inset 0 1px 0 #ffffff40,
+    0 1px 2px #0008;
 }
 .cam-swatches button[aria-pressed="true"] {
   outline: 2px solid #fff;
@@ -740,7 +745,9 @@ dialog.camera-button-editor {
     color-mix(in srgb, var(--cam) 85%, #fff),
     var(--cam)
   );
-  box-shadow: inset 0 1px 0 #ffffff70, 0 1px 2px #0008;
+  box-shadow:
+    inset 0 1px 0 #ffffff70,
+    0 1px 2px #0008;
 }
 
 .workspace-layout-menu {
@@ -1174,5 +1181,221 @@ dialog.expanded-preview-dialog::backdrop {
   .preset-chip.running {
     animation: none;
     border-left-color: var(--cam, var(--accent));
+  }
+}
+.camera-bank-grid.editing .cam-button {
+  cursor: grab;
+}
+.camera-bank-grid.editing .cam-button:active {
+  cursor: grabbing;
+}
+.camera-bank-grid .cam-button.dragging {
+  opacity: 0.45;
+}
+.camera-bank-grid .cam-button.drop-target {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+.numbered-presets {
+  flex-wrap: wrap;
+  gap: 6px 10px;
+}
+.preset-slot-toolbar {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.preset-slot-toolbar .quiet {
+  min-height: 30px;
+  font-size: 12px;
+  padding: 4px 6px;
+}
+.preset-slot-toolbar .active {
+  color: var(--accent);
+}
+.preset-slot {
+  flex: 0 0 auto;
+  display: flex;
+  border: 1px solid #44474c;
+  border-radius: 7px;
+  overflow: hidden;
+}
+.preset-slot .preset-slot-recall {
+  min-width: 42px;
+  border: 0;
+  border-radius: 0;
+  gap: 8px;
+  min-height: 36px;
+  padding: 5px 10px;
+}
+.preset-slot-recall strong {
+  font-size: 16px;
+}
+.preset-slot-recall span {
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+}
+.preset-slot .preset-slot-options {
+  border: 0;
+  border-left: 1px solid #44474c;
+  border-radius: 0;
+  padding: 3px;
+  min-width: 22px;
+  min-height: 36px;
+}
+.preset-slot.empty .preset-slot-recall {
+  background: #202226;
+  box-shadow: none;
+}
+.preset-slot.empty {
+  border-color: #33363b;
+}
+.storing .preset-slot {
+  border-color: var(--accent);
+}
+.storing .preset-slot-recall {
+  color: var(--accent);
+  opacity: 1;
+}
+.preset-slot.running {
+  outline: 2px solid var(--accent);
+}
+.preset-slot-add {
+  flex-shrink: 0;
+  padding: 6px;
+  min-width: 32px;
+  background: transparent;
+  border-style: dashed;
+}
+.preset-strip-message {
+  flex-basis: 100%;
+  margin: 2px 0 5px;
+  font-size: 12px;
+  color: var(--accent);
+}
+.preset-slot-menu {
+  min-width: min(280px, calc(100vw - 16px));
+}
+dialog.numbered-presets-dialog {
+  width: 900px;
+}
+.numbered-preset-panel {
+  padding: 22px;
+}
+.preset-picker {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 16px 0 24px;
+}
+.preset-picker button {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 2px 10px;
+  text-align: left;
+}
+.preset-picker button strong {
+  grid-row: span 2;
+  font-size: 22px;
+}
+.preset-picker button small {
+  color: var(--muted);
+  font-size: 11px;
+}
+.preset-picker button.active {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+.slot-editor-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  align-items: flex-end;
+  margin-bottom: 20px;
+}
+.slot-editor-heading h3 {
+  font-size: 20px;
+  margin: 0;
+}
+.slot-editor-heading form {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+}
+.slot-editor-heading label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12px;
+}
+.slot-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.slot-camera-table-scroll {
+  overflow-x: auto;
+  margin-top: 14px;
+}
+.slot-camera-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 460px;
+}
+.slot-camera-table td,
+.slot-camera-table th {
+  text-align: left;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line);
+}
+.slot-camera-table thead th {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 500;
+}
+.slot-camera-table tbody th {
+  font-size: 13px;
+}
+.slot-camera-table small {
+  display: block;
+  margin-top: 4px;
+  font-size: 11px;
+  color: var(--muted);
+  font-weight: 400;
+}
+.slot-camera-table input {
+  accent-color: var(--accent);
+}
+.slot-camera-table td button {
+  min-height: 30px;
+  font-size: 12px;
+}
+.legacy-presets {
+  margin-top: 24px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+.legacy-presets summary {
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 12px;
+}
+@media (max-width: 640px) {
+  .slot-editor-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .slot-editor-heading form {
+    width: 100%;
+  }
+  .slot-editor-heading input {
+    width: 100%;
+  }
+  .numbered-preset-panel {
+    padding: 16px;
   }
 }

@@ -54,6 +54,7 @@ export function commands(engine: Engine) {
         exposurePolicies: engine.policies,
         provider: engine.assistant.settings(),
         presets: engine.presets.list(),
+        presetSlots: engine.presets.slots(),
         presetJobs: structuredClone(engine.presets.jobs.slice(0, 20)),
         lighting: engine.lighting.context(),
         audit: engine.audit,
@@ -335,9 +336,18 @@ export function commands(engine: Engine) {
       readOnly: false,
       run: (a, actor) => engine.zoom(a.cameraId, a.speed, actor),
     },
+    lens_zoom: {
+      description:
+        "Hold continuous Blackmagic ATEM lens zoom: -1 zooms out fastest, +1 zooms in fastest, 0 stops. Repeat within 600 ms while held; silence automatically stops zoom. Zero is allowed even when locked.",
+      schema: z
+        .object({ cameraId: id, speed: z.number().min(-1).max(1) })
+        .strict(),
+      readOnly: false,
+      run: (a, actor) => engine.lensZoom(a.cameraId, a.speed, actor),
+    },
     ptz_stop: {
       description:
-        "Stop PTZ pan/tilt and zoom. Always available even when write access has expired.",
+        "Stop PTZ pan/tilt and zoom, or Blackmagic ATEM continuous lens zoom. Always available even when write access has expired.",
       schema: z.object({ cameraId: id }).strict(),
       readOnly: false,
       run: (a) => engine.stop(a.cameraId),
@@ -372,8 +382,17 @@ export function commands(engine: Engine) {
       },
     },
     capture_format: {
-      description: "Choose automatic detection or a supported video format for a DeckLink input. Restarts the shared preview without changing connector profiles.",
-      schema: z.object({ sourceId: id, format: z.string().regex(/^[a-zA-Z0-9]{3,4}$/).optional() }).strict(),
+      description:
+        "Choose automatic detection or a supported video format for a DeckLink input. Restarts the shared preview without changing connector profiles.",
+      schema: z
+        .object({
+          sourceId: id,
+          format: z
+            .string()
+            .regex(/^[a-zA-Z0-9]{3,4}$/)
+            .optional(),
+        })
+        .strict(),
       readOnly: false,
       run: async (a) => {
         const source = await engine.capture.setFormat(a.sourceId, a.format);

@@ -310,7 +310,7 @@ const same = (a: Speeds, b: Speeds) =>
  * flight at a time keeps drive and stop in order; unchanged speeds are
  * re-sent as a keepalive, and zero speeds send one final stop.
  */
-function useHeldDrive(
+export function useHeldDrive(
   cameraId: string,
   name: string,
   zero: Speeds,
@@ -365,16 +365,19 @@ function useHeldDrive(
   };
 }
 // Losing focus, locking or switching cameras must never leave the head moving.
-function useReleaseWhen(
+export function useReleaseWhen(
   drive: ReturnType<typeof useHeldDrive>,
   disabled: boolean,
   release: () => void,
 ) {
   useEffect(() => {
     const blur = () => moving(drive.target.current) && release();
+    const hidden = () => document.hidden && blur();
     window.addEventListener("blur", blur);
+    document.addEventListener("visibilitychange", hidden);
     return () => {
       window.removeEventListener("blur", blur);
+      document.removeEventListener("visibilitychange", hidden);
       // A running pump sees the zero target and sends the stop itself.
       drive.target.current = drive.zero;
     };

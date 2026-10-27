@@ -373,7 +373,13 @@ export class Engine extends EventEmitter {
   async disconnect(id: string) {
     const adapter = this.adapters.get(id);
     for (const [key, a] of this.adapters)
-      if (a === adapter) this.presets.cancelCamera(key, "Camera disconnected");
+      if (a === adapter) {
+        this.presets.cancelCamera(key, "Camera disconnected");
+        // Reject new movement while stopping, before closing the connection.
+        this.camera(key).status = "disconnected";
+        if (this.drives.has(`move:${key}`) || this.drives.has(`zoom:${key}`))
+          await this.stop(key).catch(() => {});
+      }
     await adapter?.close();
     if (adapter instanceof AtemAdapter) this.switchers.delete(adapter.host);
     for (const [key, a] of this.adapters)
@@ -390,10 +396,10 @@ export class Engine extends EventEmitter {
   async lock(id: string, locked: boolean, actor: string) {
     this.camera(id);
     if (locked) {
+      this.locks.add(id);
       this.presets.cancelCamera(id, "Camera locked");
       if (this.drives.has(`move:${id}`) || this.drives.has(`zoom:${id}`))
         await this.stop(id).catch(() => {});
-      this.locks.add(id);
     } else this.locks.delete(id);
     this.record(
       actor,
@@ -629,9 +635,13 @@ export class Engine extends EventEmitter {
   async stop(id: string) {
     this.forgetDrives(id);
     const a = this.adapters.get(id);
-    if (!(a instanceof PtzOpticsAdapter)) throw new Error("Not a VISCA camera");
-    await a.stop();
-    await a.zoom(0);
+    if (a instanceof AtemAdapter) {
+      const c = this.camera(id);
+      await a.set(c, this.lensZoomControl(c), 0);
+    } else if (a instanceof PtzOpticsAdapter) {
+      await a.stop();
+      await a.zoom(0);
+    } else throw new Error("Camera does not support held motion controls");
     return { stopped: true };
   }
   private forgetDrives(id: string) {
@@ -648,23 +658,50 @@ export class Engine extends EventEmitter {
   zoom(id: string, speed: number, actor: string) {
     return this.hold("zoom", id, [speed], actor);
   }
+  /** Blackmagic lens 0.9 uses normalized speed, not VISCA's 1–8 scale. */
+  lensZoom(id: string, speed: number, actor: string) {
+    if (!Number.isFinite(speed) || Math.abs(speed) > 1)
+      throw new Error("Lens zoom speed must be between -1 and 1");
+    return this.hold("zoom", id, [speed], actor, true);
+  }
+  private lensZoomControl(c: Camera) {
+    const control = c.controls.find((p) => p.id === "0.9");
+    if (!control || control.type !== "number" || !control.writable)
+      throw new Error("Camera has not reported continuous lens zoom support");
+    return control;
+  }
   private async hold(
     axis: "move" | "zoom",
     id: string,
     speeds: number[],
     actor: string,
+    lens = false,
   ) {
     const c = this.camera(id),
       a = this.adapters.get(id),
       key = `${axis}:${id}`,
       prior = this.drives.get(key),
-      operation = axis === "move" ? "ptz_drive" : "ptz_zoom",
+      operation = lens
+        ? "lens_zoom"
+        : axis === "move"
+          ? "ptz_drive"
+          : "ptz_zoom",
       what = axis === "move" ? "Joystick" : "Zoom";
-    if (!(a instanceof PtzOpticsAdapter))
+    let halt: () => Promise<unknown>, start: () => Promise<unknown>;
+    if (lens && a instanceof AtemAdapter) {
+      const control = this.lensZoomControl(c);
+      halt = () => a.set(c, control, 0);
+      start = () => a.set(c, control, speeds[0]);
+    } else if (!lens && a instanceof PtzOpticsAdapter) {
+      halt = () => (axis === "move" ? a.stop() : a.zoom(0));
+      start = () =>
+        axis === "move" ? a.drive(speeds[0], speeds[1]) : a.zoom(speeds[0]);
+    } else
       throw new Error(
-        `${what} control requires the PTZOptics VISCA connection`,
+        lens
+          ? "Lens zoom requires a Blackmagic ATEM connection"
+          : `${what} control requires the PTZOptics VISCA connection`,
       );
-    const halt = () => (axis === "move" ? a.stop() : a.zoom(0));
     const release = async () => {
       clearTimeout(this.drives.get(key)?.timer);
       this.drives.delete(key);
@@ -698,10 +735,7 @@ export class Engine extends EventEmitter {
     const signature = speeds.join(",");
     this.drives.set(key, { speeds: signature, timer });
     try {
-      if (prior?.speeds !== signature)
-        await (axis === "move"
-          ? a.drive(speeds[0], speeds[1])
-          : a.zoom(speeds[0]));
+      if (prior?.speeds !== signature) await start();
     } catch (e) {
       await release().catch(() => {});
       throw e;

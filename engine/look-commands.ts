@@ -15,6 +15,93 @@ export function lookCommands(engine: Engine): Record<string, Command> {
     return preset;
   };
   return {
+    preset_slots: {
+      description:
+        "List numbered presets, including empty slots and the cameras saved in each.",
+      readOnly: true,
+      schema: z.object({}).strict(),
+      run: () => engine.presets.slots(),
+    },
+    preset_slot_add: {
+      description:
+        "Add an empty numbered preset after the existing slots. Does not change cameras.",
+      readOnly: false,
+      schema: z.object({}).strict(),
+      run: (_a, actor) => engine.presets.addSlot(actor),
+    },
+    preset_slot_rename: {
+      description:
+        "Name a numbered preset (for example Choir). Does not change saved camera values.",
+      readOnly: false,
+      schema: z
+        .object({
+          slot: z.number().int().min(1).max(64),
+          label: z.string().trim().max(60),
+        })
+        .strict(),
+      run: (a, actor) => engine.presets.renameSlot(a.slot, a.label, actor),
+    },
+    preset_slot_save: {
+      description:
+        "Save current shading values from selected cameras into a numbered preset. Each camera has its own look. Keeps other cameras' previously saved values. Does not change cameras.",
+      readOnly: false,
+      schema: z
+        .object({
+          slot: z.number().int().min(1).max(64),
+          cameraIds: z.array(id).min(1).max(32),
+        })
+        .strict(),
+      run: (a, actor) => engine.presets.saveSlot(a.slot, a.cameraIds, actor),
+    },
+    preset_slot_remove_camera: {
+      description:
+        "Remove one camera's saved look from a numbered preset. Keeps the slot and other cameras' looks.",
+      readOnly: false,
+      schema: z
+        .object({ slot: z.number().int().min(1).max(64), cameraId: id })
+        .strict(),
+      run: (a, actor) =>
+        engine.presets.removeSlotCamera(a.slot, a.cameraId, actor),
+    },
+    preset_slot_preview: {
+      description:
+        "Preflight a numbered preset. Supply cameraId for only that camera; omit it to inspect all cameras saved in the slot. Returns changes, blockers and revisions without writing.",
+      readOnly: true,
+      schema: z
+        .object({
+          slot: z.number().int().min(1).max(64),
+          cameraId: id.optional(),
+        })
+        .strict(),
+      run: (a) =>
+        engine.presets.preview(
+          engine.presets.slotReference(a.slot),
+          a.cameraId,
+        ),
+    },
+    preset_slot_recall: {
+      description:
+        "Recall a numbered preset using preflight revisions. Supply cameraId to apply only that camera's saved look. Omit it only when explicitly applying to all saved cameras, each using its own values. Write locks still apply.",
+      readOnly: false,
+      schema: z
+        .object({
+          slot: z.number().int().min(1).max(64),
+          cameraId: id.optional(),
+          expectedRevisions: z.record(
+            z.string(),
+            z.number().int().nonnegative(),
+          ),
+        })
+        .strict(),
+      run: (a, actor) =>
+        engine.presets.recall(
+          engine.presets.slotReference(a.slot),
+          0,
+          a.expectedRevisions,
+          actor,
+          a.cameraId,
+        ),
+    },
     presets_list: {
       description:
         "List saved camera presets and multi-camera scenes. Optional cameraId returns single-camera presets for that camera only.",

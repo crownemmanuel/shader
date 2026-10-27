@@ -55,3 +55,11 @@ The production StageLight app was not modified or driven, and no physical camera
 - Local suite: 57 passed, 1 skipped. Nine new process-boundary tests use a Node fixture for discovery, sharing, signal recovery, eight independent workers, lifecycle/restarts, persistence and error handling. They do not establish hardware compatibility.
 - Frontend production build, packaged engine test and Tauri `cargo check` passed.
 - Windows-only WIC JPEG encode/decode self-test is wired into native builds and CI, but was not executed on this Mac. Actual Quad 2 capture, driver compatibility and sustained eight-input throughput remain pending on Windows.
+
+## Version 0.1.5 — zoom, numbered presets and camera ordering
+
+- Advanced Lens replaces the ATEM continuous zoom numeric box with a spring-return slider. Parameter 0.9 uses normalized −1…+1 speeds and a 600 ms keepalive timeout. Release, lock, lost focus, tab/camera changes, disconnect and shutdown send stop commands.
+- Six isolated zoom tests cover bounds, keepalives, release/lock, shared-switcher disconnect, delayed acknowledgements and shutdown. Numbered-preset tests cover per-camera/group recall, distinct camera values, merge saves, locks, stale state, persistence and camera order.
+- The isolated release frontend and standalone engine build pass. All 69 applicable engine tests pass; one Windows-only capture helper test is skipped on macOS and runs in release CI.
+- Chrome fixture checks cover zoom gestures, keyboard release, hidden windows, delayed replies, errors/retry, and desktop/compact layouts. Earlier fixture checks verified numbered slots, group recall, adding/renaming/saving slots, numeric shortcuts, drag/keyboard camera order and persistence. No physical camera writes were performed.
+- Recorder Studio remains in the development workspace and is excluded from this release pending runtime packaging and Windows hardware qualification.

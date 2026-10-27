@@ -1,200 +1,298 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Bookmark, Layers, Plus, RefreshCw, Trash2 } from "lucide-react";
+import {
+  Bookmark,
+  ChevronDown,
+  Plus,
+  Save,
+  Settings2,
+  Users,
+} from "lucide-react";
 import { command } from "./api";
 
-interface PresetSummary {
-  id: string;
-  name: string;
-  kind: "camera" | "scene";
-  cameras: { cameraId: string }[];
+export interface PresetSlot {
+  number: number;
+  label: string;
+  presetId?: string;
+  cameras: { cameraId: string; name: string }[];
 }
-interface Job {
+export const emptyPresetSlots: PresetSlot[] = [1, 2, 3, 4].map((number) => ({
+  number,
+  label: "",
+  cameras: [],
+}));
+export interface PresetJob {
   presetId: string;
   cameraIds: string[];
   status: string;
+  summary?: string;
+}
+export async function recallSlot(
+  slot: number,
+  cameraId: string | undefined,
+  perform: Function,
+  notify: (message: string) => void,
+) {
+  const scope = { slot, ...(cameraId ? { cameraId } : {}) };
+  const preview = await command("preset_slot_preview", scope);
+  if (preview.blockers.length) throw new Error(preview.blockers.join(" · "));
+  if (!preview.changes.length) {
+    notify(
+      `Already at preset ${slot}${cameraId ? " for this camera" : " on all saved cameras"}.`,
+    );
+    return;
+  }
+  await perform("preset_slot_recall", {
+    ...scope,
+    expectedRevisions: preview.revisions,
+  });
 }
 
-/** One-click looks for the selected camera, shown above the camera buttons. */
+/** Numbered hardware-style slots: a normal recall is always scoped to the selected camera. */
 export function PresetStrip({
   cameraId,
-  presets,
+  cameraName,
+  slots = emptyPresetSlots,
   jobs,
   perform,
   notify,
   onManage,
   disabled,
 }: {
-  /** Recall needs write access; saving never changes the camera. */
   cameraId: string;
-  presets: PresetSummary[];
-  jobs: Job[];
+  cameraName: string;
+  slots?: PresetSlot[];
+  jobs: PresetJob[];
   perform: Function;
   notify: (message: string) => void;
   onManage: () => void;
   disabled: boolean;
 }) {
-  const [naming, setNaming] = useState(false),
-    [name, setName] = useState(""),
-    [menu, setMenu] = useState<{ id: string; x: number; y: number }>();
-  const input = useRef<HTMLInputElement>(null);
-  const saving = useRef(false);
-  const mine = presets.filter((p) =>
-    p.cameras.some((c) => c.cameraId === cameraId),
+  const [storing, setStoring] = useState(false),
+    [busy, setBusy] = useState(false),
+    [menu, setMenu] = useState<{ number: number; x: number; y: number }>();
+  const pending = useRef(false);
+  const running = jobs.find(
+    (j) =>
+      j.cameraIds.includes(cameraId) &&
+      ["queued", "running"].includes(j.status),
   );
-  // Jobs are newest first: the first job for this camera is the active or last recall.
   const latest = jobs.find((j) => j.cameraIds.includes(cameraId));
-  const running =
-    latest && ["queued", "running"].includes(latest.status)
-      ? latest.presetId
-      : "";
-  const active = latest?.status === "applied" ? latest.presetId : "";
-  useEffect(() => {
-    if (naming) input.current?.focus();
-  }, [naming]);
-  useEffect(() => {
-    setNaming(false);
+  const target = slots.find((s) => s.number === menu?.number);
+  async function act(fn: () => Promise<unknown>) {
+    if (pending.current) return;
+    pending.current = true;
+    setBusy(true);
     setMenu(undefined);
-  }, [cameraId]);
+    try {
+      await fn();
+    } catch (e) {
+      notify((e as Error).message);
+    } finally {
+      pending.current = false;
+      setBusy(false);
+    }
+  }
+  async function save(slot: number) {
+    await perform("preset_slot_save", { slot, cameraIds: [cameraId] });
+    setStoring(false);
+    notify(`${cameraName} saved to preset ${slot}.`);
+  }
   useEffect(() => {
     if (!menu) return;
     const close = (e: Event) => {
-      if (!(e.target as HTMLElement).closest?.(".cam-menu")) setMenu(undefined);
+      if (!(e.target as HTMLElement).closest?.(".preset-slot-menu"))
+        setMenu(undefined);
     };
-    const escape = (e: KeyboardEvent) => {
+    const key = (e: KeyboardEvent) => {
       if (e.key === "Escape") setMenu(undefined);
     };
     document.addEventListener("pointerdown", close);
-    document.addEventListener("keydown", escape);
+    document.addEventListener("keydown", key);
     return () => {
       document.removeEventListener("pointerdown", close);
-      document.removeEventListener("keydown", escape);
+      document.removeEventListener("keydown", key);
     };
   }, [menu]);
-  async function recall(p: PresetSummary) {
-    try {
-      const preview = await command("preset_preview", { presetId: p.id });
-      if (preview.blockers.length) return notify(preview.blockers.join(" · "));
-      if (!preview.changes.length) return notify(`Already at “${p.name}”.`);
-      await perform("preset_recall", {
-        presetId: p.id,
-        fade: 0,
-        expectedRevisions: preview.revisions,
-      });
-    } catch (e) {
-      notify((e as Error).message);
-    }
-  }
-  async function save() {
-    if (saving.current) return;
-    const label = name.trim();
-    if (!label) return setNaming(false);
-    saving.current = true;
-    try {
-      await perform(
-        "camera_preset_save",
-        { cameraId, name: label },
-        `Saved “${label}”.`,
+  useEffect(() => {
+    const key = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setStoring(false);
+        return;
+      }
+      if (
+        e.repeat ||
+        e.altKey ||
+        e.ctrlKey ||
+        e.metaKey ||
+        e.shiftKey ||
+        busy ||
+        running ||
+        menu ||
+        !/^[1-9]$/.test(e.key) ||
+        (e.target as HTMLElement).closest(
+          "input, textarea, select, [contenteditable], dialog",
+        ) ||
+        document.querySelector(".camera-bank-grid.editing")
+      )
+        return;
+      const slot = slots.find((s) => s.number === Number(e.key));
+      if (
+        !slot ||
+        (!storing &&
+          (disabled || !slot.cameras.some((c) => c.cameraId === cameraId)))
+      )
+        return;
+      e.preventDefault();
+      void act(() =>
+        storing
+          ? save(slot.number)
+          : recallSlot(slot.number, cameraId, perform, notify),
       );
-      setName("");
-      setNaming(false);
-    } catch {
-      /* perform already showed the error; keep the name for a retry. */
-    } finally {
-      saving.current = false;
-    }
-  }
-  const target = mine.find((p) => p.id === menu?.id);
+    };
+    document.addEventListener("keydown", key);
+    return () => document.removeEventListener("keydown", key);
+  }, [
+    cameraId,
+    slots,
+    disabled,
+    storing,
+    busy,
+    running,
+    menu,
+    perform,
+    notify,
+  ]);
   return (
-    <section className="preset-strip" aria-label="Presets for this camera">
-      <span className="preset-strip-label">
-        <Bookmark size={12} />
-        Looks
-      </span>
-      <div className="preset-strip-items">
-        {mine.map((p) => (
-          <button
-            key={p.id}
-            className={`preset-chip ${p.id === active ? "active" : ""} ${p.id === running ? "running" : ""}`}
-            title={`${p.name}${p.kind === "scene" ? ` · scene, ${p.cameras.length} cameras` : ""} · right-click for options`}
-            disabled={disabled || !!running}
-            onClick={() => void recall(p)}
-            onContextMenu={(e) => {
-              e.preventDefault();
-              setMenu({ id: p.id, x: e.clientX, y: e.clientY });
-            }}
-          >
-            {p.kind === "scene" && <Layers size={12} />}
-            <span>{p.name}</span>
-          </button>
-        ))}
-        {naming ? (
-          <input
-            ref={input}
-            className="preset-name"
-            aria-label="New look name"
-            placeholder="Name this look"
-            maxLength={80}
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            onBlur={() => void save()}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") e.currentTarget.blur();
-              if (e.key === "Escape") {
-                setName("");
-                setNaming(false);
-              }
-            }}
-          />
-        ) : (
-          <button
-            className="preset-chip add"
-            title="Save this camera's current look"
-            onClick={() => setNaming(true)}
-          >
-            <Plus size={13} />
-            Save look
-          </button>
-        )}
-      </div>
-      {menu && target && (
-        <div
-          className="cam-menu"
-          role="menu"
-          style={{
-            left: Math.min(menu.x, window.innerWidth - 210),
-            top: Math.min(menu.y, window.innerHeight - 130),
-          }}
+    <section
+      className={`preset-strip numbered-presets ${storing ? "storing" : ""}`}
+      aria-label="Numbered camera presets"
+    >
+      <div className="preset-slot-toolbar">
+        <span className="preset-strip-label">
+          <Bookmark size={12} />
+          Presets
+        </span>
+        <button
+          className={storing ? "quiet active" : "quiet"}
+          aria-pressed={storing}
+          disabled={busy || !!running}
+          onClick={() => setStoring(!storing)}
         >
-          {target.kind === "camera" && (
-            <button
-              role="menuitem"
-              autoFocus
-              onClick={() => {
-                setMenu(undefined);
-                void perform(
-                  "camera_preset_save",
-                  { cameraId, id: target.id, name: target.name },
-                  `Updated “${target.name}” to the current look.`,
-                ).catch(() => {});
+          <Save size={13} />
+          {storing ? "Cancel save" : "Save…"}
+        </button>
+        <button
+          className="quiet"
+          onClick={onManage}
+          title="Name presets and choose which cameras to save"
+        >
+          <Settings2 size={13} />
+          Manage
+        </button>
+      </div>
+      <div className="preset-strip-items">
+        {slots.map((slot) => {
+          const saved = slot.cameras.some((c) => c.cameraId === cameraId);
+          const open = (button: HTMLElement) => {
+            const r = button.getBoundingClientRect();
+            setMenu({ number: slot.number, x: r.left, y: r.bottom + 4 });
+          };
+          return (
+            <div
+              key={slot.number}
+              className={`preset-slot ${saved ? "filled" : "empty"} ${running && running.presetId === slot.presetId ? "running" : ""}`}
+              onContextMenu={(e) => {
+                e.preventDefault();
+                open(e.currentTarget);
               }}
             >
-              <RefreshCw size={13} />
-              Update to current look
-            </button>
-          )}
+              <button
+                className="preset-slot-recall"
+                aria-label={`${storing ? "Save" : "Recall"} preset ${slot.number} for ${cameraName}${slot.label ? `: ${slot.label}` : ""}`}
+                disabled={
+                  busy || !!running || (!storing && (!saved || disabled))
+                }
+                title={
+                  storing
+                    ? `Save ${cameraName}’s current look to preset ${slot.number}`
+                    : !saved
+                      ? `No look saved for ${cameraName}. Choose Save…, then ${slot.number}.`
+                      : `${slot.label || `Preset ${slot.number}`} for ${cameraName}${slot.number <= 9 ? ` · press ${slot.number}` : ""}`
+                }
+                onClick={() =>
+                  void act(() =>
+                    storing
+                      ? save(slot.number)
+                      : recallSlot(slot.number, cameraId, perform, notify),
+                  )
+                }
+              >
+                <strong>{slot.number}</strong>
+                {slot.label && <span>{slot.label}</span>}
+              </button>
+              <button
+                className="preset-slot-options"
+                aria-label={`Preset ${slot.number} options`}
+                aria-haspopup="menu"
+                aria-expanded={target?.number === slot.number}
+                disabled={busy}
+                onClick={(e) => open(e.currentTarget)}
+              >
+                <ChevronDown size={12} />
+              </button>
+            </div>
+          );
+        })}
+        <button
+          className="preset-slot-add"
+          aria-label="Add preset slot"
+          title="Add another numbered preset"
+          disabled={busy || slots.length >= 64}
+          onClick={() => void act(() => perform("preset_slot_add"))}
+        >
+          <Plus size={15} />
+        </button>
+      </div>
+      {storing && (
+        <p className="preset-strip-message" role="status">
+          Choose a number to save {cameraName}’s current look. Other cameras’
+          saved looks stay unchanged.
+        </p>
+      )}
+      {latest?.status === "failed" && (
+        <p className="preset-strip-message error-text" role="alert">
+          Preset recall failed: {latest.summary}
+        </p>
+      )}
+      {menu && target && (
+        <div
+          className="cam-menu preset-slot-menu"
+          role="menu"
+          style={{
+            left: Math.max(8, Math.min(menu.x, window.innerWidth - 280)),
+            top: Math.max(8, Math.min(menu.y, window.innerHeight - 160)),
+          }}
+        >
           <button
             role="menuitem"
-            onClick={() => {
-              setMenu(undefined);
-              void perform(
-                "preset_archive",
-                { presetId: target.id, archived: true },
-                `Removed “${target.name}”. Restore it from Presets.`,
-              ).catch(() => {});
-            }}
+            autoFocus
+            disabled={!!running}
+            onClick={() => void act(() => save(target.number))}
           >
-            <Trash2 size={13} />
-            Remove
+            <Save size={13} />
+            Save {cameraName} to preset {target.number}
+          </button>
+          <button
+            role="menuitem"
+            disabled={!target.cameras.length || !!running}
+            onClick={() =>
+              void act(() =>
+                recallSlot(target.number, undefined, perform, notify),
+              )
+            }
+          >
+            <Users size={13} />
+            Apply to all saved cameras ({target.cameras.length})
           </button>
           <button
             role="menuitem"
@@ -203,8 +301,8 @@ export function PresetStrip({
               onManage();
             }}
           >
-            <Bookmark size={13} />
-            Manage presets…
+            <Settings2 size={13} />
+            Name & manage presets
           </button>
         </div>
       )}

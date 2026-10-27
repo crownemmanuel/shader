@@ -38,7 +38,11 @@ export function PresetLibrary({
     [attachLighting, setAttachLighting] = useState(true);
   const [selection, setSelection] = useState<Record<string, string[]>>({});
   const reload = async () =>
-    setItems(await command("presets_list", { includeArchived: true }));
+    setItems(
+      (await command("presets_list", { includeArchived: true })).filter(
+        (p: { slot?: number }) => !p.slot,
+      ),
+    );
   useEffect(() => {
     void reload().catch((e) => setError(e.message));
   }, []);

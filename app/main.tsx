@@ -53,10 +53,11 @@ import {
 import { RoutingSettings, BrightnessSettings } from "./routing-settings";
 import { CameraInputsSettings } from "./camera-inputs";
 import { PresetStrip } from "./preset-strip";
+import { NumberedPresets } from "./numbered-presets";
 import { axes } from "../engine/shading";
-import { PresetLibrary } from "./preset-library";
 import { LightingPanel } from "./lighting-panel";
 import { PtzControls } from "./ptz-controls";
+import { LensZoomSlider } from "./lens-controls";
 import {
   CameraBank,
   WorkspaceLayoutMenu,
@@ -406,7 +407,8 @@ function App() {
                         <PresetStrip
                           key={camera.id}
                           cameraId={camera.id}
-                          presets={status?.presets || []}
+                          cameraName={look.label}
+                          slots={status?.presetSlots}
                           jobs={status?.presetJobs || []}
                           perform={perform}
                           notify={setNotice}
@@ -654,6 +656,18 @@ function App() {
                             const visual = axes(camera).filter(
                               (a) => a.controlId === c.id,
                             );
+                            if (
+                              camera.vendor === "atem" &&
+                              c.id === "0.9" &&
+                              c.type === "number"
+                            )
+                              return (
+                                <LensZoomSlider
+                                  key={`${camera.id}:${c.id}`}
+                                  cameraId={camera.id}
+                                  disabled={disabled}
+                                />
+                              );
                             if (visual.length)
                               return visual.map((a) => (
                                 <AxisEditor
@@ -854,8 +868,13 @@ function App() {
         />
       )}
       {modal === "presets" && (
-        <Modal title="Camera looks & scenes" close={() => setModal(null)}>
-          <PresetLibrary
+        <Modal
+          title="Numbered presets"
+          close={() => setModal(null)}
+          className="numbered-presets-dialog"
+        >
+          <NumberedPresets
+            slots={status?.presetSlots}
             cameras={cameras}
             selected={selected}
             jobs={status?.presetJobs || []}

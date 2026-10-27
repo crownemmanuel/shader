@@ -59,3 +59,22 @@ Cameras appear in a horizontally scrolling strip. Select a camera to keep its 16
 Open **Layout** to put controls on the left or right, or hide the camera strip. When hidden, the camera name becomes a selector, with an Add camera button beside it. These layout preferences are remembered on this computer. Narrow workspaces place the preview above the controls.
 
 Use **Expand** above the picture for a larger view. Press **Escape** or **Return to controls** to return. Expanding keeps the existing video preview running.
+
+
+## Blackmagic lens zoom
+
+Under **Advanced → Lens**, **Zoom** is a spring-return slider for cameras that report continuous lens zoom through ATEM. Hold left to zoom out or right to zoom in; farther from the center means faster movement. Release to stop at the current framing. Hold an arrow key for keyboard control; releasing the key also stops zoom.
+
+The slider sends a stop on lost focus, camera/tab changes, or locking. The engine also sends a stop if held updates lapse for 600 ms, and before disconnecting an actively zooming camera. These are camera commands, so a working switcher connection and a compatible powered zoom lens are still required.
+
+This follows Blackmagic’s lens parameter **0.9**, continuous zoom speed **−1 to +1**, with **0** for stop; it is separate from absolute zoom position. See the camera-control protocol in the [Blackmagic Studio Camera manual](https://documents.blackmagicdesign.com/UserManuals/BlackmagicStudioCameraManual4k.pdf?_v=1687158010000).
+
+## Numbered presets and camera order
+
+Presets 1–4 are always shown above the camera buttons. A grey number means the selected camera has no look saved in that slot (or is locked). Choose **Save…**, then a number, to store this camera’s current shading values. Saving another camera to the same number keeps each camera’s own look. Click a number to apply only the selected camera’s look.
+
+Use the arrow beside a number for **Apply to all saved cameras**. Each saved camera receives its own values; unsaved cameras are untouched. All saved cameras are preflighted before recall, and a missing or locked camera blocks the group. **Manage** lets you name a number (for example “Choir”), select several cameras to save, apply individual cameras, or remove a camera from a slot. **+** adds another slot. Older named looks remain under **Older looks & scenes** and are not automatically assigned to numbers. Slots and names persist in the preset library.
+
+Keys **1–9** recall the matching numbered preset on the selected camera. **Alt+1–9** selects a camera by its visible button position. Shortcuts pause while typing or using a dialog; plain preset shortcuts also pause while editing camera buttons.
+
+Choose **Edit** above the camera buttons and drag a button to reorder it. You can also right-click a button and choose **Move earlier/later**, or focus it in Edit mode and use **Alt+Left/Right**. Button order is remembered on this computer; colors, names, hidden cameras, capture mappings and physical ATEM inputs stay attached to the same camera identities.

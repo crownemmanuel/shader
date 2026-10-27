@@ -84,10 +84,14 @@ export function fromAtem(cmd: CameraControlUpdateCommand): Control {
         : undefined,
     min:
       (
-        { "8.0": -2, "8.1": -4, "8.2": 0, "8.3": -8, "8.5": 0 } as Record<
-          string,
-          number
-        >
+        {
+          "0.9": -1,
+          "8.0": -2,
+          "8.1": -4,
+          "8.2": 0,
+          "8.3": -8,
+          "8.5": 0,
+        } as Record<string, number>
       )[k] ??
       (p.type === 128
         ? -16
@@ -101,6 +105,7 @@ export function fromAtem(cmd: CameraControlUpdateCommand): Control {
     max:
       (
         {
+          "0.9": 1,
           "8.0": 2,
           "8.1": 4,
           "8.2": 32767 / 2048,
@@ -121,7 +126,12 @@ export function fromAtem(cmd: CameraControlUpdateCommand): Control {
     freshness: len > 0 ? "reported" : "unknown",
     updatedAt: new Date().toISOString(),
     native: { category: cmd.category, parameter: cmd.parameter, type: p.type },
-    note: "Reported by ATEM; this is switcher state, not confirmation from the camera. Numeric bounds are wire-format bounds; consult camera limits.",
+    // Blackmagic camera-control protocol: lens 0.9 is continuous zoom,
+    // -1 = wide, 0 = stop, +1 = tele (not an absolute lens position).
+    note:
+      k === "0.9"
+        ? "Continuous zoom: negative zooms out, positive zooms in, zero stops. Reported by the ATEM switcher."
+        : "Reported by ATEM; this is switcher state, not confirmation from the camera. Numeric bounds are wire-format bounds; consult camera limits.",
   };
 }
 export class AtemAdapter implements Adapter {

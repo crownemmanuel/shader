@@ -21,9 +21,13 @@ import {
   Focus,
   Move,
   BookOpen,
+  GripVertical,
+  ArrowLeft,
+  ArrowRight,
 } from "lucide-react";
 import { createPortal } from "react-dom";
 import type { Camera } from "../engine/types";
+import { orderedCameraIds, moveCameraId } from "./camera-order";
 
 interface LayoutPreferences {
   controlsLeft: boolean;
@@ -158,9 +162,57 @@ export function CameraBank({
   const [editing, setEditing] = useState(false),
     [editor, setEditor] = useState(""),
     [menu, setMenu] = useState<{ id: string; x: number; y: number }>();
-  // Button defaults (color, "Cam N") follow the full list so hiding one never recolors the rest.
-  const visible = cameras.filter((c) => !c.hidden),
+  const [order, setOrder] = useState<string[]>(() => {
+    try {
+      const value = JSON.parse(
+        localStorage.getItem("shader.camera-order") || "[]",
+      );
+      return Array.isArray(value)
+        ? value.filter((id): id is string => typeof id === "string")
+        : [];
+    } catch {
+      return [];
+    }
+  });
+  const [dragging, setDragging] = useState("");
+  const [dropTarget, setDropTarget] = useState("");
+  const [announcement, setAnnouncement] = useState("");
+  const suppressClick = useRef(false);
+  useEffect(() => {
+    try {
+      localStorage.setItem("shader.camera-order", JSON.stringify(order));
+    } catch {
+      /* Ordering remains usable for this session. */
+    }
+  }, [order]);
+  const byId = new Map(cameras.map((c) => [c.id, c]));
+  // Colors remain tied to the original camera list when buttons move.
+  const visible = orderedCameraIds(
+      order,
+      cameras.map((c) => c.id),
+    )
+      .map((id) => byId.get(id)!)
+      .filter((c) => !c.hidden),
     hiddenCount = cameras.length - visible.length;
+  const move = (id: string, target: string, after = false) => {
+    setOrder((previous) =>
+      moveCameraId(
+        previous,
+        cameras.map((c) => c.id),
+        id,
+        target,
+        after,
+      ),
+    );
+    setAnnouncement(
+      `${byId.get(id)?.name} moved ${after ? "after" : "before"} ${byId.get(target)?.name}.`,
+    );
+  };
+  const moveOne = (id: string, direction: -1 | 1) => {
+    const index = visible.findIndex((c) => c.id === id),
+      target = visible[index + direction];
+    if (target) move(id, target.id, direction === 1);
+  };
   useEffect(() => {
     if (!menu) return;
     const close = (e: Event) => {
@@ -178,7 +230,7 @@ export function CameraBank({
       window.removeEventListener("blur", close);
     };
   }, [menu]);
-  // Digits 1–9 switch cameras unless the operator is typing or using a control.
+  // Alt+1–9 selects cameras; plain digits are reserved for numbered presets.
   useEffect(() => {
     const key = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement;
@@ -186,13 +238,17 @@ export function CameraBank({
         inert ||
         e.metaKey ||
         e.ctrlKey ||
-        e.altKey ||
-        !/^[1-9]$/.test(e.key) ||
+        !e.altKey ||
+        e.repeat ||
+        !/^Digit[1-9]$/.test(e.code) ||
         target.closest("input, textarea, select, [contenteditable], dialog")
       )
         return;
-      const camera = visible[Number(e.key) - 1];
-      if (camera) onSelect(camera.id);
+      const camera = visible[Number(e.code.slice(5)) - 1];
+      if (camera) {
+        e.preventDefault();
+        onSelect(camera.id);
+      }
     };
     document.addEventListener("keydown", key);
     return () => document.removeEventListener("keydown", key);
@@ -215,11 +271,11 @@ export function CameraBank({
           )}
         </span>
         <span className="camera-bank-actions">
-          {editing && <small>Click a button to rename or recolor it</small>}
+          {editing && <small>Drag to reorder · click to edit</small>}
           <button
             className={editing ? "quiet active" : "quiet"}
             aria-pressed={editing}
-            title="Rename, recolor or add an icon to camera buttons"
+            title="Reorder, rename or recolor camera buttons"
             onClick={() => setEditing(!editing)}
           >
             <Pencil size={13} />
@@ -247,10 +303,60 @@ export function CameraBank({
             <button
               key={c.id}
               aria-current={c.id === selected ? "true" : undefined}
-              title={`${c.name} · ${c.model}${c.locked ? " · locked" : ""}${position < 9 ? ` · press ${position + 1}` : ""} · right-click for options`}
-              className={`cam-button ${c.id === selected ? "selected" : ""} ${c.tally === "program" ? "on-air" : c.tally === "preview" ? "preview" : ""} ${c.vendor !== "demo" && c.status !== "connected" ? "offline" : ""}`}
+              title={`${c.name} · ${c.model}${c.locked ? " · locked" : ""}${position < 9 ? ` · Alt+${position + 1}` : ""} · right-click for options`}
+              className={`cam-button ${c.id === selected ? "selected" : ""} ${c.tally === "program" ? "on-air" : c.tally === "preview" ? "preview" : ""} ${c.vendor !== "demo" && c.status !== "connected" ? "offline" : ""} ${dropTarget === c.id ? "drop-target" : ""} ${dragging === c.id ? "dragging" : ""}`}
               style={{ "--cam": look.color } as React.CSSProperties}
-              onClick={() => (editing ? setEditor(c.id) : onSelect(c.id))}
+              draggable={editing}
+              onDragStart={(e) => {
+                if (!editing) return;
+                setDragging(c.id);
+                suppressClick.current = true;
+                e.dataTransfer.effectAllowed = "move";
+                e.dataTransfer.setData("text/plain", c.id);
+              }}
+              onDragOver={(e) => {
+                if (!editing || !dragging || dragging === c.id) return;
+                e.preventDefault();
+                e.dataTransfer.dropEffect = "move";
+                setDropTarget(c.id);
+              }}
+              onDrop={(e) => {
+                e.preventDefault();
+                if (editing && dragging) {
+                  const bounds = e.currentTarget.getBoundingClientRect();
+                  move(
+                    dragging,
+                    c.id,
+                    e.clientX > bounds.left + bounds.width / 2,
+                  );
+                }
+                setDragging("");
+                setDropTarget("");
+              }}
+              onDragEnd={() => {
+                setDragging("");
+                setDropTarget("");
+                setTimeout(() => {
+                  suppressClick.current = false;
+                }, 0);
+              }}
+              onKeyDown={(e) => {
+                if (
+                  editing &&
+                  e.altKey &&
+                  ["ArrowLeft", "ArrowRight"].includes(e.key)
+                ) {
+                  e.preventDefault();
+                  moveOne(c.id, e.key === "ArrowLeft" ? -1 : 1);
+                }
+              }}
+              onClick={() => {
+                if (suppressClick.current) {
+                  suppressClick.current = false;
+                  return;
+                }
+                editing ? setEditor(c.id) : onSelect(c.id);
+              }}
               onContextMenu={(e) => {
                 e.preventDefault();
                 setMenu({ id: c.id, x: e.clientX, y: e.clientY });
@@ -265,7 +371,13 @@ export function CameraBank({
               </span>
               <strong>{look.label}</strong>
               <small>{state || " "}</small>
-              {editing && <Pencil className="cam-edit-mark" size={11} />}
+              {editing && (
+                <GripVertical
+                  className="cam-edit-mark"
+                  size={13}
+                  aria-label="Drag to reorder; Alt+Left or Alt+Right to move"
+                />
+              )}
             </button>
           );
         })}
@@ -277,13 +389,16 @@ export function CameraBank({
           </span>
         )}
       </nav>
+      <span className="sr-only" role="status">
+        {announcement}
+      </span>
       {menu && (
         <div
           className="cam-menu"
           role="menu"
           style={{
             left: Math.min(menu.x, window.innerWidth - 190),
-            top: Math.min(menu.y, window.innerHeight - 100),
+            top: Math.max(8, Math.min(menu.y, window.innerHeight - 190)),
           }}
         >
           <button
@@ -296,6 +411,28 @@ export function CameraBank({
           >
             <Pencil size={13} />
             Edit button…
+          </button>
+          <button
+            role="menuitem"
+            disabled={visible[0]?.id === menu.id}
+            onClick={() => {
+              moveOne(menu.id, -1);
+              setMenu(undefined);
+            }}
+          >
+            <ArrowLeft size={13} />
+            Move earlier
+          </button>
+          <button
+            role="menuitem"
+            disabled={visible.at(-1)?.id === menu.id}
+            onClick={() => {
+              moveOne(menu.id, 1);
+              setMenu(undefined);
+            }}
+          >
+            <ArrowRight size={13} />
+            Move later
           </button>
           <button
             role="menuitem"

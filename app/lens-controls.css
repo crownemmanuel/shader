@@ -1,0 +1,25 @@
+.lens-zoom-control .lens-zoom-slider {
+  /* The center tick marks zero speed in both directions. */
+  --track: linear-gradient(
+    90deg,
+    #667580,
+    #b4bec4 49.5%,
+    var(--accent) 49.5%,
+    var(--accent) 50.5%,
+    #b4bec4 50.5%,
+    #667580
+  );
+  margin: 0 0 12px;
+}
+.lens-zoom-slider input[type="range"] {
+  touch-action: none;
+}
+.lens-zoom-slider .slider-endpoints span {
+  flex: 1;
+}
+.lens-zoom-slider .slider-endpoints span:nth-child(2) {
+  text-align: center;
+}
+.lens-zoom-slider .slider-endpoints span:last-child {
+  text-align: right;
+}

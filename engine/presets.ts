@@ -51,6 +51,7 @@ export interface PresetCamera {
 }
 export interface Preset {
   id: string;
+  slot?: number;
   name: string;
   description: string;
   kind: "camera" | "scene";
@@ -82,6 +83,7 @@ export interface PresetFrame {
 
 export class PresetService {
   private items: Preset[] = [];
+  private slotLabels: string[] = ["", "", "", ""];
   jobs: RecallJob[] = [];
   private pending = new Map<string, Promise<void>>();
   private saveQueue = Promise.resolve();
@@ -96,7 +98,13 @@ export class PresetService {
       );
       if (data.version !== 1 || !Array.isArray(data.presets))
         throw new Error("Unsupported preset library");
+      const labels = z
+        .array(z.string().max(60))
+        .min(4)
+        .max(64)
+        .parse(data.slotLabels ?? ["", "", "", ""]);
       this.items = data.presets;
+      this.slotLabels = labels;
     } catch (e) {
       if ((e as NodeJS.ErrnoException).code !== "ENOENT")
         this.engine.record(
@@ -108,7 +116,11 @@ export class PresetService {
     }
   }
   private async persist() {
-    const data = JSON.stringify({ version: 1, presets: this.items }, null, 2);
+    const data = JSON.stringify(
+      { version: 1, presets: this.items, slotLabels: this.slotLabels },
+      null,
+      2,
+    );
     this.saveQueue = this.saveQueue
       .catch(() => {})
       .then(async () => {
@@ -123,6 +135,7 @@ export class PresetService {
       .filter((p) => includeArchived || !p.archived)
       .map((p) => ({
         id: p.id,
+        ...(p.slot ? { slot: p.slot } : {}),
         name: p.name,
         description: p.description,
         kind: p.kind,
@@ -161,33 +174,11 @@ export class PresetService {
     const old = a.id ? this.get(a.id) : undefined;
     if (!old && this.items.length >= 500)
       throw new Error("Preset library limit reached (500)");
-    const cameras = a.cameras.map((selection) => {
-      const c = this.engine.camera(selection.cameraId);
-      const controls = selection.controlIds
-        ? selection.controlIds.map((id) => {
-            const control = c.controls.find((p) => p.id === id);
-            if (!control || !presetEligible(control))
-              throw new Error(`Cannot save unavailable control ${id}`);
-            return control;
-          })
-        : defaultPresetControls(c);
-      if (!controls.length)
-        throw new Error(`No known shading values to save for ${c.name}`);
-      for (const control of controls) validateValue(control, control.value);
-      return {
-        cameraId: c.id,
-        name: c.name,
-        vendor: c.vendor,
-        model: c.model,
-        controls: controls.map(({ id, label, type, value, freshness }) => ({
-          id,
-          label,
-          type,
-          value: structuredClone(value),
-          freshness,
-        })),
-      };
-    });
+    if (old?.slot)
+      throw new Error(
+        "Use numbered preset commands to update this slot without replacing other cameras.",
+      );
+    const cameras = a.cameras.map((selection) => this.snapshot(selection));
     const now = new Date().toISOString();
     const preset: Preset = {
       id: old?.id || `look-${randomUUID()}`,
@@ -212,6 +203,165 @@ export class PresetService {
     );
     return structuredClone(preset);
   }
+  private snapshot(selection: {
+    cameraId: string;
+    controlIds?: string[];
+  }): PresetCamera {
+    const c = this.engine.camera(selection.cameraId);
+    const controls = selection.controlIds
+      ? selection.controlIds.map((id) => {
+          const control = c.controls.find((p) => p.id === id);
+          if (!control || !presetEligible(control))
+            throw new Error(`Cannot save unavailable control ${id}`);
+          return control;
+        })
+      : defaultPresetControls(c);
+    if (!controls.length)
+      throw new Error(`No known shading values to save for ${c.name}`);
+    for (const control of controls) validateValue(control, control.value);
+    return {
+      cameraId: c.id,
+      name: c.name,
+      vendor: c.vendor,
+      model: c.model,
+      controls: controls.map(({ id, label, type, value, freshness }) => ({
+        id,
+        label,
+        type,
+        value: structuredClone(value),
+        freshness,
+      })),
+    };
+  }
+  private slot(number: number) {
+    if (
+      !Number.isInteger(number) ||
+      number < 1 ||
+      number > this.slotLabels.length
+    )
+      throw new Error("Unknown preset number");
+    return this.items.find((p) => p.slot === number && !p.archived);
+  }
+  private slotName(number: number) {
+    return `Preset ${number}${this.slotLabels[number - 1] ? ` · ${this.slotLabels[number - 1]}` : ""}`;
+  }
+  slots() {
+    return this.slotLabels.map((label, i) => {
+      const preset = this.slot(i + 1);
+      return {
+        number: i + 1,
+        label,
+        presetId: preset?.id,
+        cameras:
+          preset?.cameras.map((c) => ({
+            cameraId: c.cameraId,
+            name: c.name,
+          })) || [],
+      };
+    });
+  }
+  async addSlot(actor = "ui") {
+    if (this.slotLabels.length >= 64)
+      throw new Error("Maximum of 64 numbered presets reached");
+    this.slotLabels.push("");
+    await this.persist();
+    this.engine.record(
+      actor,
+      "preset_slot_add",
+      "ok",
+      `Added preset ${this.slotLabels.length}`,
+    );
+    return this.slots();
+  }
+  async renameSlot(number: number, label: string, actor = "ui") {
+    const preset = this.slot(number);
+    this.slotLabels[number - 1] = z.string().trim().max(60).parse(label);
+    if (preset) {
+      preset.name = this.slotName(number);
+      preset.updatedAt = new Date().toISOString();
+    }
+    await this.persist();
+    this.engine.record(
+      actor,
+      "preset_slot_rename",
+      "ok",
+      this.slotName(number),
+    );
+    return this.slots();
+  }
+  async saveSlot(number: number, cameraIds: string[], actor: string) {
+    const old = this.slot(number);
+    if (
+      !cameraIds.length ||
+      cameraIds.length > 32 ||
+      new Set(cameraIds).size !== cameraIds.length
+    )
+      throw new Error("Choose between 1 and 32 different cameras");
+    // Capture every selected camera before replacing anything. Other cameras retain their saved values.
+    const snapshots = cameraIds.map((cameraId) => this.snapshot({ cameraId }));
+    const cameras = [
+      ...(old?.cameras || []).filter((c) => !cameraIds.includes(c.cameraId)),
+      ...snapshots,
+    ];
+    if (cameras.length > 32)
+      throw new Error("A preset supports up to 32 cameras");
+    if (!old && this.items.length >= 500)
+      throw new Error("Preset library limit reached (500)");
+    const now = new Date().toISOString();
+    const preset: Preset = {
+      id: old?.id || `look-${randomUUID()}`,
+      slot: number,
+      name: this.slotName(number),
+      description: "Numbered camera preset",
+      kind: cameras.length > 1 ? "scene" : "camera",
+      createdAt: old?.createdAt || now,
+      updatedAt: now,
+      archived: false,
+      cameras,
+    };
+    this.items = [...this.items.filter((p) => p.id !== preset.id), preset];
+    await this.persist();
+    this.engine.record(
+      actor,
+      "preset_slot_save",
+      "ok",
+      `Saved ${snapshots.map((c) => c.name).join(", ")} to ${preset.name}`,
+    );
+    return this.slots();
+  }
+  async removeSlotCamera(number: number, cameraId: string, actor: string) {
+    const preset = this.slot(number);
+    if (!preset) throw new Error("Preset is empty");
+    preset.cameras = preset.cameras.filter((c) => c.cameraId !== cameraId);
+    if (!preset.cameras.length)
+      this.items = this.items.filter((p) => p.id !== preset.id);
+    else {
+      preset.kind = preset.cameras.length > 1 ? "scene" : "camera";
+      preset.updatedAt = new Date().toISOString();
+    }
+    await this.persist();
+    this.engine.record(
+      actor,
+      "preset_slot_remove",
+      "ok",
+      `Removed camera from ${this.slotName(number)}`,
+    );
+    return this.slots();
+  }
+  slotReference(number: number) {
+    const preset = this.slot(number);
+    if (!preset) throw new Error(`Preset ${number} is empty`);
+    return preset.id;
+  }
+  private forCamera(reference: string, cameraId?: string) {
+    const preset = this.get(reference);
+    if (cameraId) {
+      preset.cameras = preset.cameras.filter((c) => c.cameraId === cameraId);
+      if (!preset.cameras.length)
+        throw new Error("This camera has no look saved in this preset");
+    }
+    return preset;
+  }
   async archive(id: string, archived: boolean) {
     const p = this.items.find((p) => p.id === id);
     if (!p) throw new Error("Unknown preset");
@@ -220,8 +370,8 @@ export class PresetService {
     await this.persist();
     return this.list(true);
   }
-  preview(reference: string) {
-    const preset = this.get(reference),
+  preview(reference: string, cameraId?: string) {
+    const preset = this.forCamera(reference, cameraId),
       blockers: string[] = [],
       revisions: Record<string, number> = {};
     const changes: {
@@ -276,9 +426,10 @@ export class PresetService {
     fade: number,
     expectedRevisions: Record<string, number>,
     actor: string,
+    cameraId?: string,
   ) {
-    const preset = this.get(reference),
-      preview = this.preview(reference);
+    const preset = this.forCamera(reference, cameraId),
+      preview = this.preview(reference, cameraId);
     if (preview.blockers.length) throw new Error(preview.blockers.join("; "));
     for (const [id, revision] of Object.entries(preview.revisions))
       if (expectedRevisions[id] !== revision)
