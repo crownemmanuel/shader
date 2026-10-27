@@ -186,11 +186,22 @@ impl Capture {
         } else {
             gst::Fraction::new(30, 1)
         };
+        // Fault-injection checks exercise worker isolation on small CI runners.
+        // The normal synthetic integration check remains 1080p; physical inputs
+        // never take this test-only path.
+        let compact_test = source.simulated
+            && std::env::var("SHADER_RECORDER_TEST_INPUTS").as_deref() == Ok("1")
+            && std::env::var("SHADER_RECORDER_TEST_COMPACT").as_deref() == Ok("1");
+        let (width, height) = if compact_test {
+            (640i32, 360i32)
+        } else {
+            (1920, 1080)
+        };
         filter.set_property(
             "caps",
             gst::Caps::builder("video/x-raw")
-                .field("width", 1920i32)
-                .field("height", 1080i32)
+                .field("width", width)
+                .field("height", height)
                 .field("framerate", fraction)
                 .build(),
         );

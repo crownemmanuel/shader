@@ -6,7 +6,13 @@ export function runtimeEnvironment(binary, base = process.env) {
   const runtime = path.join(path.dirname(binary), "runtime");
   if (existsSync(runtime)) {
     const installed = env.GSTREAMER_1_0_ROOT_MSVC_X86_64 || env.GSTREAMER_ROOT;
-    const entries = (env.PATH || "")
+    const pathKey = Object.keys(env).find(
+      (key) => key.toUpperCase() === "PATH",
+    );
+    const inheritedPath = pathKey ? env[pathKey] : "";
+    for (const key of Object.keys(env))
+      if (key.toUpperCase() === "PATH") delete env[key];
+    const entries = (inheritedPath || "")
       .split(path.delimiter)
       .filter(
         (p) =>

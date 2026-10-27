@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
 import assert from "node:assert/strict";
+import { runtimeEnvironment } from "../runtime-env.mjs";
 const root = await mkdtemp(path.join(tmpdir(), "shader-recorder-crash-"));
 const output = path.join(root, "output");
 await mkdir(output);
@@ -28,6 +29,7 @@ const child = spawn(binary, ["--data-dir", path.join(root, "state")], {
     ...process.env,
     SHADER_FFMPEG: ffmpeg,
     SHADER_RECORDER_TEST_INPUTS: "1",
+    SHADER_RECORDER_TEST_COMPACT: "1",
     SHADER_RECORDER_SEGMENT_SECONDS: "10",
   },
   stdio: "ignore",
@@ -105,7 +107,11 @@ try {
       } catch {}
     }
   }
-  assert.ok(partial, "live MOV checkpoint is readable before fault");
+  assert.ok(
+    partial,
+    "live MOV checkpoint is readable before fault: " +
+      JSON.stringify(await rpc("status")),
+  );
   for (const dir of await readdir(path.join(root, "state/workers"))) {
     const config = JSON.parse(
       await readFile(
@@ -175,4 +181,3 @@ try {
     } catch {}
   }
 }
-import { runtimeEnvironment } from "../runtime-env.mjs";

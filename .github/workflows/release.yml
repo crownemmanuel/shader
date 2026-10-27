@@ -148,7 +148,9 @@ jobs:
       - name: Build and verify bundled Recorder Studio
         run: npm run build:recorder
       - name: Recorder unit tests
-        run: cargo test --locked --manifest-path native/recorder/Cargo.toml
+        run: |
+          node --test native/recorder/tests/runtime-env.test.mjs
+          cargo test --locked --manifest-path native/recorder/Cargo.toml
       - name: Packaged recorder recording and crash-recovery tests
         shell: bash
         env:
