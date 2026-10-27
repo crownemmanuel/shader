@@ -41,6 +41,7 @@ import { command } from "./api";
 import { AppUpdates, useUpdateChecks } from "./updater";
 import "./style.css";
 import "./workspace-layout.css";
+import "./settings.css";
 import {
   LiveMonitor,
   SimpleControls,
@@ -49,7 +50,7 @@ import {
   NumberField,
   useLiveValue,
 } from "./visual-controls";
-import { RoutingSettings } from "./routing-settings";
+import { RoutingSettings, BrightnessSettings } from "./routing-settings";
 import { CameraInputsSettings } from "./camera-inputs";
 import { PresetStrip } from "./preset-strip";
 import { axes } from "../engine/shading";
@@ -69,7 +70,9 @@ function Modal({
   title,
   close,
   children,
+  className,
 }: {
+  className?: string;
   title: string;
   close: () => void;
   children: React.ReactNode;
@@ -79,7 +82,7 @@ function Modal({
     ref.current?.showModal();
   }, []);
   return (
-    <dialog ref={ref} onCancel={close}>
+    <dialog ref={ref} onCancel={close} className={className}>
       <header>
         <h2>{title}</h2>
         <button className="icon" aria-label="Close dialog" onClick={close}>
@@ -430,7 +433,7 @@ function App() {
                               perform(
                                 "cameras_hide",
                                 { cameraIds: [id], hidden: true },
-                                "Camera hidden. Show it again in Settings › Camera inputs.",
+                                "Camera hidden. Show it again in Settings › Camera buttons.",
                               ),
                             )
                           }
@@ -1275,7 +1278,24 @@ function SettingsModal({
   perform: Function;
   onLighting: () => void;
 }) {
-  const [tab, setTab] = useState(initialTab);
+  type Tab =
+    | "mapping"
+    | "inputs"
+    | "brightness"
+    | "assistant"
+    | "integrations"
+    | "updates";
+  const [tab, setTab] = useState<Tab>(
+    initialTab === "inputs" ? "inputs" : "mapping",
+  );
+  const tabs: { id: Tab; label: string }[] = [
+    { id: "mapping", label: "Camera mapping" },
+    { id: "inputs", label: "Camera buttons" },
+    { id: "brightness", label: "Brightness limits" },
+    { id: "assistant", label: "Assistant" },
+    { id: "integrations", label: "Integrations" },
+    { id: "updates", label: "App updates" },
+  ];
   const [provider, setProvider] = useState(
       status?.provider?.provider || "openai",
     ),
@@ -1286,189 +1306,252 @@ function SettingsModal({
     [saved, setSaved] = useState(false),
     [error, setError] = useState("");
   return (
-    <Modal title="Settings" close={close}>
+    <Modal title="Settings" close={close} className="settings-dialog">
       <div className="settings-tabs" role="tablist" aria-label="Settings">
-        <button
-          role="tab"
-          aria-selected={tab === "general"}
-          onClick={() => setTab("general")}
-        >
-          General
-        </button>
-        <button
-          role="tab"
-          aria-selected={tab === "inputs"}
-          onClick={() => setTab("inputs")}
-        >
-          Camera inputs
-        </button>
-      </div>
-      {tab === "inputs" && (
-        <CameraInputsSettings status={status} perform={perform} />
-      )}
-      {/* Kept mounted while hidden so unsaved fields survive a tab switch. */}
-      <div
-        className="form"
-        style={tab === "general" ? undefined : { display: "none" }}
-      >
-        <AppUpdates />
-        <RoutingSettings status={status} perform={perform} />
-        <div className="settings-intro">
-          <Lightbulb size={21} />
-          <div>
-            <h3>StageLight connection</h3>
-            <p>Lighting reports, camera looks and cue-triggered scenes.</p>
-          </div>
-          <button onClick={onLighting}>Configure lighting link</button>
-        </div>
-        <div className="settings-intro">
-          <MessageSquare size={21} />
-          <div>
-            <h3>Camera assistant</h3>
-            <p>Choose the model that works alongside you.</p>
-          </div>
-        </div>
-        <form
-          onSubmit={async (e) => {
-            e.preventDefault();
-            try {
-              await perform("provider_configure", {
-                provider,
-                model,
-                vision,
-                ...(provider === "compatible" ? { baseUrl } : {}),
-                ...(key ? { apiKey: key } : {}),
-              });
-              setKey("");
-              setSaved(true);
-              setError("");
-            } catch (e) {
-              setError(String(e));
-            }
-          }}
-        >
-          <div className="form-row">
-            <label>
-              Provider
-              <select
-                value={provider}
-                onChange={(e) => {
-                  setProvider(e.target.value);
-                  setSaved(false);
-                  setKey("");
-                }}
-              >
-                <option value="openai">OpenAI · GPT</option>
-                <option value="anthropic">Anthropic · Claude</option>
-                <option value="groq">Groq</option>
-                <option value="compatible">OpenAI-compatible endpoint</option>
-              </select>
-            </label>
-            <label>
-              Model ID
-              <input
-                value={model}
-                onChange={(e) => {
-                  setModel(e.target.value);
-                  setSaved(false);
-                }}
-                placeholder="Enter a model you have access to"
-                required
-              />
-            </label>
-          </div>
-          {provider === "compatible" && (
-            <label>
-              Base URL
-              <input
-                type="url"
-                value={baseUrl}
-                onChange={(e) => setBaseUrl(e.target.value)}
-                placeholder="http://127.0.0.1:1234/v1"
-                required
-              />
-            </label>
-          )}
-          <label>
-            API key
-            <input
-              type="password"
-              autoComplete="new-password"
-              value={key}
-              onChange={(e) => {
-                setKey(e.target.value);
-                setSaved(false);
-              }}
-              placeholder={
-                status?.provider?.configured
-                  ? "Key configured for this session"
-                  : "Add a key when ready"
+        {tabs.map((item, index) => (
+          <button
+            key={item.id}
+            id={`settings-tab-${item.id}`}
+            role="tab"
+            aria-controls={`settings-panel-${item.id}`}
+            aria-selected={tab === item.id}
+            tabIndex={tab === item.id ? 0 : -1}
+            onClick={() => setTab(item.id)}
+            onKeyDown={(e) => {
+              const next =
+                e.key === "ArrowRight"
+                  ? (index + 1) % tabs.length
+                  : e.key === "ArrowLeft"
+                    ? (index + tabs.length - 1) % tabs.length
+                    : e.key === "Home"
+                      ? 0
+                      : e.key === "End"
+                        ? tabs.length - 1
+                        : -1;
+              if (next >= 0) {
+                e.preventDefault();
+                setTab(tabs[next].id);
+                document
+                  .getElementById(`settings-tab-${tabs[next].id}`)
+                  ?.focus();
               }
-            />
-          </label>
-          <p className="form-note">
-            Keys stay in engine memory for this session. Provider and model
-            choices are saved. No key is sent to the camera or returned through
-            MCP.
-          </p>
-          <label className="checkbox">
-            <input
-              type="checkbox"
-              checked={vision}
-              onChange={(e) => setVision(e.target.checked)}
-            />
-            This model supports image input
-          </label>
-          <p className="form-note">
-            Frames are sent only when you select “Share camera frames” in the
-            assistant.
-          </p>
-          {error && <p className="error-text">{error}</p>}
-          <button className="primary">
-            {saved ? (
-              <>
-                <Check size={15} />
-                Saved
-              </>
-            ) : (
-              "Save assistant settings"
-            )}
+            }}
+          >
+            {item.label}
           </button>
-        </form>
-        <div className="settings-section">
-          <Terminal size={20} />
-          <div>
-            <h3>Connect an external agent</h3>
-            <p>
-              Use this stdio MCP configuration while Shader is running. The
-              agent uses the same camera state, controls, locks, and frame
-              capture.
-            </p>
-            <pre>
-              {JSON.stringify(
-                status?.mcpConfig || {
-                  mcpServers: {
-                    shader: { command: "shader-engine", args: ["--mcp"] },
+        ))}
+      </div>
+      <div className="settings-panels">
+        <div
+          role="tabpanel"
+          id="settings-panel-mapping"
+          aria-labelledby="settings-tab-mapping"
+          hidden={tab !== "mapping"}
+        >
+          <RoutingSettings status={status} perform={perform} />
+        </div>
+        <div
+          role="tabpanel"
+          id="settings-panel-inputs"
+          aria-labelledby="settings-tab-inputs"
+          hidden={tab !== "inputs"}
+        >
+          <div className="settings-page-heading">
+            <div>
+              <h3>Camera buttons</h3>
+              <p>Choose which inputs appear in your workspace.</p>
+            </div>
+          </div>
+          <CameraInputsSettings status={status} perform={perform} />
+        </div>
+        <div
+          role="tabpanel"
+          id="settings-panel-brightness"
+          aria-labelledby="settings-tab-brightness"
+          hidden={tab !== "brightness"}
+        >
+          <BrightnessSettings status={status} perform={perform} />
+        </div>
+        <div
+          role="tabpanel"
+          id="settings-panel-updates"
+          aria-labelledby="settings-tab-updates"
+          hidden={tab !== "updates"}
+        >
+          <AppUpdates />
+        </div>
+        <div
+          className="settings-narrow"
+          role="tabpanel"
+          id="settings-panel-integrations"
+          aria-labelledby="settings-tab-integrations"
+          hidden={tab !== "integrations"}
+        >
+          <div className="settings-intro">
+            <Lightbulb size={21} />
+            <div>
+              <h3>StageLight connection</h3>
+              <p>Lighting reports, camera looks and cue-triggered scenes.</p>
+            </div>
+            <button onClick={onLighting}>Configure lighting link</button>
+          </div>
+          <div className="settings-section">
+            <Terminal size={20} />
+            <div>
+              <h3>Connect an external agent</h3>
+              <p>
+                Use this stdio MCP configuration while Shader is running. The
+                agent uses the same camera state, controls, locks, and frame
+                capture.
+              </p>
+              <pre>
+                {JSON.stringify(
+                  status?.mcpConfig || {
+                    mcpServers: {
+                      shader: { command: "shader-engine", args: ["--mcp"] },
+                    },
                   },
-                },
-                null,
-                2,
-              )}
-            </pre>
+                  null,
+                  2,
+                )}
+              </pre>
+            </div>
+          </div>
+          <div className="settings-section">
+            <Plug size={20} />
+            <div>
+              <h3>Integration status</h3>
+              {Object.entries(status?.integrations || {}).map(([k, v]) => (
+                <p key={k}>
+                  <strong>{k}</strong>
+                  <br />
+                  {String(v)}
+                </p>
+              ))}
+            </div>
           </div>
         </div>
-        <div className="settings-section">
-          <Plug size={20} />
-          <div>
-            <h3>Integration status</h3>
-            {Object.entries(status?.integrations || {}).map(([k, v]) => (
-              <p key={k}>
-                <strong>{k}</strong>
-                <br />
-                {String(v)}
-              </p>
-            ))}
+        <div
+          className="settings-narrow form"
+          role="tabpanel"
+          id="settings-panel-assistant"
+          aria-labelledby="settings-tab-assistant"
+          hidden={tab !== "assistant"}
+        >
+          <div className="settings-intro">
+            <MessageSquare size={21} />
+            <div>
+              <h3>Camera assistant</h3>
+              <p>Choose the model that works alongside you.</p>
+            </div>
           </div>
+          <form
+            onSubmit={async (e) => {
+              e.preventDefault();
+              try {
+                await perform("provider_configure", {
+                  provider,
+                  model,
+                  vision,
+                  ...(provider === "compatible" ? { baseUrl } : {}),
+                  ...(key ? { apiKey: key } : {}),
+                });
+                setKey("");
+                setSaved(true);
+                setError("");
+              } catch (e) {
+                setError(String(e));
+              }
+            }}
+          >
+            <div className="form-row">
+              <label>
+                Provider
+                <select
+                  value={provider}
+                  onChange={(e) => {
+                    setProvider(e.target.value);
+                    setSaved(false);
+                    setKey("");
+                  }}
+                >
+                  <option value="openai">OpenAI · GPT</option>
+                  <option value="anthropic">Anthropic · Claude</option>
+                  <option value="groq">Groq</option>
+                  <option value="compatible">OpenAI-compatible endpoint</option>
+                </select>
+              </label>
+              <label>
+                Model ID
+                <input
+                  value={model}
+                  onChange={(e) => {
+                    setModel(e.target.value);
+                    setSaved(false);
+                  }}
+                  placeholder="Enter a model you have access to"
+                  required
+                />
+              </label>
+            </div>
+            {provider === "compatible" && (
+              <label>
+                Base URL
+                <input
+                  type="url"
+                  value={baseUrl}
+                  onChange={(e) => setBaseUrl(e.target.value)}
+                  placeholder="http://127.0.0.1:1234/v1"
+                  required
+                />
+              </label>
+            )}
+            <label>
+              API key
+              <input
+                type="password"
+                autoComplete="new-password"
+                value={key}
+                onChange={(e) => {
+                  setKey(e.target.value);
+                  setSaved(false);
+                }}
+                placeholder={
+                  status?.provider?.configured
+                    ? "Key configured for this session"
+                    : "Add a key when ready"
+                }
+              />
+            </label>
+            <p className="form-note">
+              Keys stay in engine memory for this session. Provider and model
+              choices are saved. No key is sent to the camera or returned
+              through MCP.
+            </p>
+            <label className="checkbox">
+              <input
+                type="checkbox"
+                checked={vision}
+                onChange={(e) => setVision(e.target.checked)}
+              />
+              This model supports image input
+            </label>
+            <p className="form-note">
+              Frames are sent only when you select “Share camera frames” in the
+              assistant.
+            </p>
+            {error && <p className="error-text">{error}</p>}
+            <button className="primary">
+              {saved ? (
+                <>
+                  <Check size={15} />
+                  Saved
+                </>
+              ) : (
+                "Save assistant settings"
+              )}
+            </button>
+          </form>
         </div>
       </div>
     </Modal>

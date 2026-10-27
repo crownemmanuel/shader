@@ -5,19 +5,25 @@ export function CaptureFormatSelect({
   source,
   perform,
   onChange,
+  compact = false,
+  label = "Input video format",
 }: {
   source?: CaptureSource;
   perform: Function;
   onChange: (source: CaptureSource) => void;
+  compact?: boolean;
+  label?: string;
 }) {
   const [busy, setBusy] = useState(false),
     [error, setError] = useState("");
   if (source?.kind !== "decklink" || !source.modes?.length) return null;
   return (
-    <div>
+    <div className={compact ? "capture-format-compact" : undefined}>
       <label>
-        Input video format
+        {!compact && label}
         <select
+          aria-label={label}
+          title="Match the camera’s SDI output. Changes apply to all cameras sharing this input and briefly restart its preview."
           value={source.format || ""}
           disabled={busy || source.available === false}
           onChange={async (event) => {
@@ -48,14 +54,26 @@ export function CaptureFormatSelect({
               {mode.name}
             </option>
           ))}
+          {source.format &&
+            !source.modes.some((mode) => mode.code === source.format) && (
+              <option value={source.format}>
+                {source.format} · unavailable
+              </option>
+            )}
         </select>
       </label>
-      <p className="form-note">
-        {busy
-          ? "Applying video format…"
-          : "Match the camera’s SDI output. Changing the format briefly restarts its preview."}
-      </p>
-      {error && <p className="error-text">{error}</p>}
+      {(!compact || busy) && (
+        <p className="form-note" role="status">
+          {busy
+            ? "Applying video format…"
+            : "Match the camera’s SDI output. Changing the format briefly restarts its preview."}
+        </p>
+      )}
+      {error && (
+        <p className="error-text" role="alert">
+          {error}
+        </p>
+      )}
     </div>
   );
 }

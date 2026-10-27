@@ -1,85 +1,529 @@
+import React, { useRef, useState, useEffect } from "react";
+import { RefreshCw, Search } from "lucide-react";
 import { CaptureFormatSelect } from "./capture-format";
-import React, { useState } from "react";
-import { Video, Radio, SlidersHorizontal } from "lucide-react";
 import type { Camera, CaptureSource } from "../engine/types";
-import { defaultPolicy, type ExposurePolicy } from "../engine/shading";
 import type { SwitcherInfo } from "../engine/routing";
-export function RoutingSettings({
-  status,
-  perform,
-}: {
-  status: any;
-  perform: Function;
-}) {
-  const [selected, setSelected] = useState(status?.cameras?.[0]?.id || "");
-  const cameras: Camera[] = status?.cameras || [],
-    camera = cameras.find((c) => c.id === selected);
+import { defaultPolicy, type ExposurePolicy } from "../engine/shading";
+
+type SettingsProps = { status: any; perform: Function };
+
+/** One shared source inventory, with independently saved camera rows. */
+export function RoutingSettings({ status, perform }: SettingsProps) {
+  const cameras: Camera[] = status?.cameras || [];
+  const switchers: SwitcherInfo[] = status?.switchers || [];
+  const [sources, setSources] = useState<CaptureSource[]>(
+    status?.captureSources || [],
+  );
+  const [query, setQuery] = useState("");
+  const [scanning, setScanning] = useState(false);
+  const [diagnostics, setDiagnostics] = useState<string[]>([]);
+  const [scanResult, setScanResult] = useState("");
+  const [error, setError] = useState("");
+  useEffect(() => {
+    setSources(status?.captureSources || []);
+  }, [status?.captureSources]);
+  const hidden = new Set<string>(status?.hiddenCameras || []);
+  const filtered = cameras.filter((c) =>
+    `${c.name} ${c.address} ${c.model}`
+      .toLowerCase()
+      .includes(query.toLowerCase()),
+  );
+  const updateSource = (source: CaptureSource) =>
+    setSources((items) => [...items.filter((s) => s.id !== source.id), source]);
+  async function scan() {
+    setScanning(true);
+    setError("");
+    setDiagnostics([]);
+    setScanResult("");
+    try {
+      const result = await perform("capture_sources");
+      setSources(result.sources);
+      setDiagnostics(result.diagnostics);
+      const available = result.sources.filter(
+        (s: CaptureSource) => s.available !== false,
+      ).length;
+      setScanResult(
+        available
+          ? `Found ${available} video input${available === 1 ? "" : "s"}. Select an input in each camera’s row.`
+          : "No video inputs found. Check that your capture device is connected and its driver is installed, then scan again.",
+      );
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setScanning(false);
+    }
+  }
   return (
-    <section className="routing-settings">
-      <h3>
-        <Video size={18} />
-        Camera inputs & live status
-      </h3>
-      <p className="form-note">
-        Match each camera to its physical SDI input and the ATEM bus feeding
-        your audience. The monitor and agents use this same map.
-      </p>
-      {cameras.length ? (
-        <>
-          <label>
-            Camera
-            <select
-              value={selected}
-              onChange={(e) => setSelected(e.target.value)}
-            >
-              {cameras.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
+    <section className="mapping-settings">
+      <div className="settings-page-heading">
+        <div>
+          <h3>Camera mapping</h3>
+          <p>
+            See every camera and its connections in one place. Changes save
+            automatically.
+          </p>
+        </div>
+        <button
+          className="primary"
+          disabled={scanning}
+          onClick={() => void scan()}
+        >
+          <RefreshCw size={15} className={scanning ? "spin" : ""} />
+          {scanning ? "Finding video inputs…" : "Find video inputs"}
+        </button>
+      </div>
+      <div className="mapping-guide">
+        <span>
+          <strong>Video input</strong> supplies Shader’s preview.
+        </span>
+        <span>
+          <strong>ATEM input + program bus</strong> determine the camera’s
+          on-air tally.
+        </span>
+      </div>
+      {(scanResult || diagnostics.length > 0 || error) && (
+        <div className="mapping-discovery" aria-live="polite">
+          {scanResult && <p>{scanResult}</p>}
+          {diagnostics.length > 0 && (
+            <ul>
+              {diagnostics.map((d, i) => (
+                <li key={i}>{d}</li>
               ))}
-            </select>
-          </label>
-          {camera && (
-            <RouteForm
-              key={camera.id}
-              camera={camera}
-              status={status}
-              perform={perform}
-            />
+            </ul>
           )}
+          {error && (
+            <p className="error-text" role="alert">
+              {error}
+            </p>
+          )}
+        </div>
+      )}
+      {cameras.length > 0 ? (
+        <>
+          <div className="mapping-toolbar">
+            <label className="mapping-search">
+              <Search size={15} />
+              <input
+                type="search"
+                aria-label="Filter cameras"
+                placeholder="Find a camera by name or address"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+              />
+            </label>
+            <span>
+              {filtered.length} of {cameras.length} cameras
+            </span>
+          </div>
+          <p className="mapping-scroll-hint">
+            Scroll sideways to see all mapping columns.
+          </p>
+          {!sources.length && !scanResult && (
+            <p className="mapping-empty-hint">
+              No video inputs listed yet. Use <strong>Find video inputs</strong>{" "}
+              to discover your DeckLink, SDI or USB inputs.
+            </p>
+          )}
+          <div
+            className="mapping-table-scroll"
+            role="region"
+            aria-label="Camera mapping table"
+            tabIndex={0}
+          >
+            <table className="mapping-table">
+              <caption className="sr-only">
+                Camera visibility, video capture inputs and ATEM tally mapping.
+                Changes save automatically.
+              </caption>
+              <colgroup>
+                <col className="map-show" />
+                <col className="map-camera" />
+                <col className="map-video" />
+                <col className="map-format" />
+                <col className="map-switcher" />
+                <col className="map-input" />
+                <col className="map-bus" />
+              </colgroup>
+              <thead>
+                <tr>
+                  <th scope="col">Show</th>
+                  <th scope="col">Camera</th>
+                  <th scope="col">Video input</th>
+                  <th scope="col">Video format</th>
+                  <th scope="col">ATEM switcher</th>
+                  <th scope="col">ATEM input</th>
+                  <th scope="col">Program bus</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map((camera) => (
+                  <MappingRow
+                    key={camera.id}
+                    camera={camera}
+                    cameras={cameras}
+                    hidden={hidden.has(camera.id)}
+                    sources={sources}
+                    switchers={switchers}
+                    perform={perform}
+                    updateSource={updateSource}
+                  />
+                ))}
+                {!filtered.length && (
+                  <tr>
+                    <td colSpan={7} className="mapping-no-results">
+                      No cameras match “{query}”.{" "}
+                      <button className="quiet" onClick={() => setQuery("")}>
+                        Clear search
+                      </button>
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+          <p className="mapping-footnote">
+            Show controls visibility in the camera button bank. Hidden cameras
+            keep their connections and mappings. Mapping does not reroute your
+            ATEM’s outputs.
+          </p>
         </>
       ) : (
+        <div className="settings-empty">
+          <h4>No cameras connected</h4>
+          <p>
+            Close Settings and use Discover cameras or Connect by address. Each
+            connected camera will appear here as a row.
+          </p>
+        </div>
+      )}
+      <ManualInput perform={perform} onRegistered={updateSource} />
+    </section>
+  );
+}
+
+function MappingRow({
+  camera,
+  cameras,
+  hidden,
+  sources,
+  switchers,
+  perform,
+  updateSource,
+}: {
+  camera: Camera;
+  cameras: Camera[];
+  hidden: boolean;
+  sources: CaptureSource[];
+  switchers: SwitcherInfo[];
+  perform: Function;
+  updateSource: (s: CaptureSource) => void;
+}) {
+  const [busy, setBusy] = useState(false),
+    [error, setError] = useState(""),
+    [saved, setSaved] = useState(false);
+  const pending = useRef(false);
+  const route = camera.tallyRoute;
+  const sw = switchers.find((s) => s.host === route?.host);
+  const source = sources.find((s) => s.id === camera.sourceId);
+  const shared = camera.sourceId
+    ? cameras.filter(
+        (c) => c.id !== camera.id && c.sourceId === camera.sourceId,
+      )
+    : [];
+  async function change(name: string, args: object) {
+    if (pending.current) return;
+    pending.current = true;
+    setBusy(true);
+    setError("");
+    setSaved(false);
+    try {
+      await perform(
+        name,
+        name === "cameras_hide" ? args : { cameraId: camera.id, ...args },
+      );
+      setSaved(true);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      pending.current = false;
+      setBusy(false);
+    }
+  }
+  return (
+    <tr className={hidden ? "mapping-hidden" : ""} aria-busy={busy}>
+      <td>
+        <input
+          type="checkbox"
+          aria-label={`Show ${camera.name} in camera bank`}
+          checked={!hidden}
+          disabled={busy}
+          onChange={(e) =>
+            void change("cameras_hide", {
+              cameraIds: [camera.id],
+              hidden: !e.target.checked,
+            })
+          }
+        />
+      </td>
+      <th scope="row">
+        <strong title={`${camera.model} · ${camera.address}`}>
+          {camera.name}
+        </strong>
+        <span className={`mapping-connection ${camera.status}`}>
+          <span
+            className={`status-dot ${camera.status === "connected" || camera.status === "demo" ? "online" : ""}`}
+          />
+          {camera.status === "demo" ? "Simulated" : camera.status}
+          {hidden ? " · hidden" : ""}
+        </span>
+        <span className="mapping-save-state" role="status">
+          {busy ? (
+            "Saving…"
+          ) : error ? (
+            <span className="error-text">{error}</span>
+          ) : saved ? (
+            "Saved"
+          ) : null}
+        </span>
+      </th>
+      <td>
+        <select
+          aria-label={`${camera.name} video input`}
+          value={camera.sourceId || ""}
+          disabled={busy}
+          onChange={(e) =>
+            void change("capture_assign", { sourceId: e.target.value || null })
+          }
+        >
+          <option value="">No video input</option>
+          {sources.map((s) => (
+            <option key={s.id} value={s.id} disabled={s.available === false}>
+              {s.connector
+                ? `SDI ${s.connector} · ${s.nativeName || s.name}`
+                : s.name}
+              {s.available === false ? " · unavailable" : ""}
+            </option>
+          ))}
+          {camera.sourceId && !source && (
+            <option value={camera.sourceId}>Saved input · unavailable</option>
+          )}
+        </select>
+        {source?.available === false && <small>Input unavailable</small>}
+        {shared.length > 0 && (
+          <small>Shared with {shared.map((c) => c.name).join(", ")}</small>
+        )}
+      </td>
+      <td>
+        {source?.kind === "decklink" && source.modes?.length ? (
+          <CaptureFormatSelect
+            key={source.id}
+            source={source}
+            perform={perform}
+            onChange={updateSource}
+            compact
+            label={`${camera.name} video format`}
+          />
+        ) : (
+          <span className="mapping-na">
+            {source?.format || (source ? "From source" : "—")}
+          </span>
+        )}
+      </td>
+      <td>
+        <select
+          aria-label={`${camera.name} ATEM switcher`}
+          title={sw ? `${sw.name} · ${sw.host}` : route?.host}
+          disabled={busy}
+          value={route?.host || ""}
+          onChange={(e) => {
+            const next = switchers.find((s) => s.host === e.target.value);
+            void change("camera_route", {
+              route: next
+                ? {
+                    host: next.host,
+                    input: next.inputs[0]?.id ?? 1,
+                    me: next.buses[0]?.me ?? 0,
+                  }
+                : null,
+            });
+          }}
+        >
+          <option value="">No tally mapping</option>
+          {switchers.map((s) => (
+            <option key={s.host} value={s.host}>
+              {s.name}
+              {s.connected ? "" : " · offline"}
+            </option>
+          ))}
+          {route && !sw && (
+            <option value={route.host}>{route.host} · offline</option>
+          )}
+        </select>
+      </td>
+      <td>
+        <select
+          aria-label={`${camera.name} ATEM input`}
+          value={route?.input ?? ""}
+          disabled={busy || !route}
+          onChange={(e) =>
+            void change("camera_route", {
+              route: { ...route, input: Number(e.target.value) },
+            })
+          }
+        >
+          {!route && <option value="">—</option>}
+          {sw?.inputs.map((i) => (
+            <option key={i.id} value={i.id}>
+              {i.id} · {i.name}
+            </option>
+          ))}
+          {route && !sw?.inputs.some((i) => i.id === route.input) && (
+            <option value={route.input}>{route.input} · unavailable</option>
+          )}
+        </select>
+      </td>
+      <td>
+        <select
+          aria-label={`${camera.name} program bus`}
+          value={route?.me ?? ""}
+          disabled={busy || !route}
+          onChange={(e) =>
+            void change("camera_route", {
+              route: { ...route, me: Number(e.target.value) },
+            })
+          }
+        >
+          {!route && <option value="">—</option>}
+          {sw?.buses.map((b) => (
+            <option key={b.me} value={b.me}>
+              M/E {b.me + 1}
+            </option>
+          ))}
+          {route && !sw?.buses.some((b) => b.me === route.me) && (
+            <option value={route.me}>M/E {route.me + 1} · unavailable</option>
+          )}
+        </select>
+      </td>
+    </tr>
+  );
+}
+
+function ManualInput({
+  perform,
+  onRegistered,
+}: {
+  perform: Function;
+  onRegistered: (s: CaptureSource) => void;
+}) {
+  const [busy, setBusy] = useState(false),
+    [error, setError] = useState(""),
+    [note, setNote] = useState("");
+  return (
+    <details className="mapping-advanced">
+      <summary>Advanced: manually register a video input</summary>
+      <p className="form-note">
+        DeckLink inputs normally appear after a scan. Use this only when you
+        know the device’s exact subdevice name.
+      </p>
+      <form
+        className="manual-input-form"
+        onSubmit={async (e) => {
+          e.preventDefault();
+          const form = e.currentTarget;
+          const data = new FormData(form);
+          setBusy(true);
+          setError("");
+          setNote("");
+          try {
+            const device = String(data.get("device")).trim(),
+              format = String(data.get("format")).trim();
+            const source = await perform("capture_register", {
+              id: `decklink:${device}`,
+              name: String(data.get("name")).trim() || device,
+              device,
+              kind: "decklink",
+              ...(format ? { format } : {}),
+            });
+            onRegistered(source);
+            setNote("Input added. Choose it in the Video input column above.");
+            form.reset();
+          } catch (e) {
+            setError((e as Error).message);
+          } finally {
+            setBusy(false);
+          }
+        }}
+      >
+        <label>
+          Device / subdevice name
+          <input name="device" required placeholder="DeckLink Quad 2 (1)" />
+        </label>
+        <label>
+          Friendly name
+          <input name="name" placeholder="SDI 1 · stage left" />
+        </label>
+        <label>
+          Format code (optional)
+          <input name="format" placeholder="Hp30" />
+        </label>
+        <button disabled={busy}>{busy ? "Adding…" : "Add input"}</button>
+      </form>
+      {error && (
+        <p className="error-text" role="alert">
+          {error}
+        </p>
+      )}
+      {note && (
+        <p className="form-note" role="status">
+          {note}
+        </p>
+      )}
+    </details>
+  );
+}
+
+export function BrightnessSettings({ status, perform }: SettingsProps) {
+  const cameras: Camera[] = status?.cameras || [];
+  return (
+    <section className="brightness-settings">
+      <div className="settings-page-heading">
+        <div>
+          <h3>Brightness limits</h3>
+          <p>
+            Set each camera’s limits for Simple controls. Shutter and ND stay
+            fixed.
+          </p>
+        </div>
+      </div>
+      {cameras.map((camera) => (
+        <BrightnessRow
+          key={camera.id}
+          camera={camera}
+          initialPolicy={status.exposurePolicies?.[camera.id] || defaultPolicy}
+          perform={perform}
+        />
+      ))}
+      {!cameras.length && (
         <p className="form-note">
-          Connect a camera or start the simulator to configure inputs.
+          Connect a camera to set its brightness limits.
         </p>
       )}
     </section>
   );
 }
-function RouteForm({
+function BrightnessRow({
   camera,
-  status,
+  initialPolicy,
   perform,
 }: {
   camera: Camera;
-  status: any;
+  initialPolicy: ExposurePolicy;
   perform: Function;
 }) {
-  const [host, setHost] = useState(camera.tallyRoute?.host || ""),
-    [input, setInput] = useState(camera.tallyRoute?.input ?? 1),
-    [me, setMe] = useState(camera.tallyRoute?.me ?? 0),
-    [source, setSource] = useState(camera.sourceId || ""),
-    [sources, setSources] = useState<CaptureSource[]>(
-      status.captureSources || [],
-    ),
-    [policy, setPolicy] = useState<ExposurePolicy>(
-      status.exposurePolicies?.[camera.id] || defaultPolicy,
-    ),
+  const [policy, setPolicy] = useState(initialPolicy),
+    [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
-    [note, setNote] = useState(""),
-    [busy, setBusy] = useState(false);
-  const switchers: SwitcherInfo[] = status.switchers || [],
-    sw = switchers.find((s) => s.host === host);
+    [note, setNote] = useState("");
   const act = async (fn: () => Promise<void>) => {
     setBusy(true);
     setError("");
@@ -93,154 +537,11 @@ function RouteForm({
     }
   };
   return (
-    <div className="routing-form">
-      <div className="form-row">
-        <label>
-          ATEM switcher
-          <select value={host} onChange={(e) => setHost(e.target.value)}>
-            <option value="">Tally not mapped</option>
-            {switchers.map((s) => (
-              <option key={s.host} value={s.host}>
-                {s.name} · {s.host}
-                {s.connected ? "" : " · offline"}
-              </option>
-            ))}
-            {host && !sw && <option value={host}>{host} · offline</option>}
-          </select>
-        </label>
-        <label>
-          Audience program bus
-          <select value={me} onChange={(e) => setMe(Number(e.target.value))}>
-            {(sw?.buses.length ? sw.buses : [{ me: 0 }, { me: 1 }]).map((b) => (
-              <option key={b.me} value={b.me}>
-                M/E {b.me + 1}
-              </option>
-            ))}
-          </select>
-        </label>
-      </div>
-      {host && (
-        <label>
-          Camera’s ATEM input
-          <select
-            value={input}
-            onChange={(e) => setInput(Number(e.target.value))}
-          >
-            {sw?.inputs.map((i) => (
-              <option key={i.id} value={i.id}>
-                {i.id} · {i.name}
-              </option>
-            ))}
-            {!sw?.inputs.some((i) => i.id === input) && (
-              <option value={input}>Input {input} · unavailable</option>
-            )}
-          </select>
-        </label>
-      )}
-      <label>
-        Camera’s video capture input
-        <select value={source} onChange={(e) => setSource(e.target.value)}>
-          <option value="">No capture input</option>
-          {sources.map((s) => (
-            <option key={s.id} value={s.id} disabled={s.available === false}>
-              {s.name} ·{" "}
-              {s.backend === "decklink-sdk" ? "Blackmagic DeckLink" : s.kind}
-              {s.available === false ? " · unavailable" : ""}
-            </option>
-          ))}
-          {source && !sources.some((s) => s.id === source) && (
-            <option value={source}>{source}</option>
-          )}
-        </select>
-      </label>
-      <CaptureFormatSelect
-        key={source}
-        source={sources.find((s) => s.id === source)}
-        perform={perform}
-        onChange={(updated) =>
-          setSources((items) =>
-            items.map((s) => (s.id === updated.id ? updated : s)),
-          )
-        }
-      />
-      <div className="form-row">
-        <button
-          disabled={busy}
-          onClick={() =>
-            void act(async () => {
-              const r = await perform("capture_sources");
-              setSources(r.sources);
-              setNote(r.diagnostics.join(" "));
-            })
-          }
-        >
-          Find video inputs
-        </button>
-        <button
-          className="primary"
-          disabled={busy}
-          onClick={() =>
-            void act(async () => {
-              await perform("camera_route", {
-                cameraId: camera.id,
-                route: host ? { host, input, me } : null,
-              });
-              await perform("capture_assign", {
-                cameraId: camera.id,
-                sourceId: source || null,
-              });
-              setNote("Camera routing saved.");
-            })
-          }
-        >
-          Save camera mapping
-        </button>
-      </div>
-      <details>
-        <summary>Register a DeckLink / SDI input</summary>
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            const f = new FormData(e.currentTarget),
-              device = String(f.get("device")),
-              format = String(f.get("format"));
-            void act(async () => {
-              const s = await perform("capture_register", {
-                id: `decklink:${device}`,
-                name: String(f.get("name")) || device,
-                device,
-                kind: "decklink",
-                ...(format ? { format } : {}),
-              });
-              setSources((prev) => [...prev.filter((p) => p.id !== s.id), s]);
-              setSource(s.id);
-              setNote("Input registered. Save camera mapping to assign it.");
-            });
-          }}
-        >
-          <label>
-            Device / subdevice name
-            <input name="device" required placeholder="DeckLink Quad 2 (1)" />
-          </label>
-          <div className="form-row">
-            <label>
-              Friendly label
-              <input name="name" placeholder="SDI 1 · stage left" />
-            </label>
-            <label>
-              Format code (optional)
-              <input name="format" placeholder="Hp30" />
-            </label>
-          </div>
-          <button disabled={busy}>Register input</button>
-        </form>
-        <p className="form-note">
-          Register each of your card’s capture subdevices separately. Use the
-          names reported by Desktop Video / FFmpeg on the capture computer.
-        </p>
-      </details>
+    <div className="brightness-row">
       <details className="policy-settings">
-        <summary>Simple brightness limits</summary>
+        <summary>
+          {camera.name} <span>{camera.model}</span>
+        </summary>
         <p className="form-note">
           Iris first, then gain or ISO. Shutter and ND stay fixed. These are
           starting limits; set them for each lens and camera after testing.
