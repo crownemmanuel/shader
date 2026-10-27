@@ -90,6 +90,7 @@ struct Recording {
     track: Track,
     parts: Vec<Value>,
     opened: HashParts,
+    pending_closed: Vec<(String, u64, Instant)>,
     last_flush: Instant,
 }
 type HashParts = std::collections::HashMap<String, u64>;
@@ -459,6 +460,35 @@ impl Capture {
         );
         // Native S32LE PCM is already accepted by qtmux. Preserve its channel layout.
         let mux = element("splitmuxsink", "record-files")?;
+        // Request fsync/_commit on the filesink's own handle. Opening a second
+        // writer for live flushing conflicts with Windows file-sharing rules.
+        mux.connect("sink-added", false, |values| {
+            let sink = values[1].get::<gst::Element>().expect("sink-added element");
+            let pad = sink.static_pad("sink").expect("filesink sink pad");
+            let last = Mutex::new(Instant::now());
+            pad.add_probe(
+                gst::PadProbeType::BUFFER | gst::PadProbeType::BUFFER_LIST,
+                move |_, info| {
+                    let mut last = last.lock().unwrap();
+                    if last.elapsed() >= Duration::from_secs(2) {
+                        if let Some(buffer) = info.buffer_mut() {
+                            buffer.make_mut().set_flags(gst::BufferFlags::SYNC_AFTER);
+                            *last = Instant::now();
+                        } else if let Some(list) = info.buffer_list_mut() {
+                            let list = list.make_mut();
+                            if let Some(index) = list.len().checked_sub(1) {
+                                if let Some(buffer) = list.get_mut(index) {
+                                    buffer.set_flags(gst::BufferFlags::SYNC_AFTER);
+                                    *last = Instant::now();
+                                }
+                            }
+                        }
+                    }
+                    gst::PadProbeReturn::Ok
+                },
+            );
+            None
+        });
         let prefix = format!(
             "{}_SDI-{}_{}",
             file_stem(&track.source.name),
@@ -530,6 +560,7 @@ impl Capture {
             track,
             parts: vec![],
             opened: HashParts::new(),
+            pending_closed: vec![],
             last_flush: Instant::now(),
         };
         journal::atomic_json(
@@ -565,19 +596,15 @@ impl Capture {
                     self.stats.lock().unwrap().record_error = Some(e.to_string());
                 }
             }
+            if let Err(e) = r.finalize_closed(false) {
+                self.stats.lock().unwrap().record_error = Some(e.to_string());
+            }
             if r.last_flush.elapsed() > Duration::from_secs(2) {
                 let flush = (|| -> Result<()> {
                     ensure!(
                         fs2::available_space(&r.track.folder)? > 2 * 1024 * 1024 * 1024,
                         "Recording drive is nearly full; finishing files"
                     );
-                    for file in r.opened.keys() {
-                        fs::OpenOptions::new()
-                            .read(true)
-                            .write(true)
-                            .open(file)?
-                            .sync_all()?;
-                    }
                     Ok(())
                 })();
                 if let Err(e) = flush {
@@ -653,6 +680,9 @@ impl Capture {
                 error = Some(e);
             }
         }
+        if let Err(e) = r.finalize_closed(true) {
+            error = Some(e);
+        }
         self.last_stop = Some(boundary.to_string());
         let _ = fs::remove_file(self.config.directory.join("active.json"));
         if let Some(e) = error {
@@ -704,25 +734,45 @@ impl Recording {
                             path.parent() == Some(self.track.folder.as_path()),
                             "Unexpected segment location"
                         );
-                        fs::OpenOptions::new()
-                            .read(true)
-                            .write(true)
-                            .open(&path)?
-                            .sync_all()?;
-                        let final_path = path.with_extension("");
-                        ensure!(!final_path.exists(), "Completed segment already exists");
-                        fs::rename(&path, &final_path)?;
-                        let start = self.opened.remove(&file).unwrap_or(0);
-                        let end = running.max(start);
-                        self.parts.push(json!({"file":final_path.file_name().unwrap().to_string_lossy(),"startSessionTicks":start.to_string(),"endSessionTicks":end.to_string(),"bytes":fs::metadata(&final_path)?.len().to_string(),"status":"finalized-and-flushed"}));
-                        journal::atomic_json(
-                            &self.track.folder.join("segments.json"),
-                            &self.parts,
-                        )?;
+                        // The notification can precede the async sink closing
+                        // its handle. Publish the file only once that is done.
+                        self.pending_closed.push((file, running, Instant::now()));
                     }
                 }
             }
             _ => {}
+        }
+        Ok(())
+    }
+    fn finalize_closed(&mut self, require_all: bool) -> Result<()> {
+        while let Some((file, running, closed_at)) = self.pending_closed.first().cloned() {
+            let path = PathBuf::from(&file);
+            let final_path = path.with_extension("");
+            ensure!(!final_path.exists(), "Completed segment already exists");
+            let result = (|| -> std::io::Result<()> {
+                fs::OpenOptions::new()
+                    .read(true)
+                    .write(true)
+                    .open(&path)?
+                    .sync_all()?;
+                fs::rename(&path, &final_path)
+            })();
+            if let Err(error) = result {
+                if cfg!(windows)
+                    && matches!(error.raw_os_error(), Some(32 | 33))
+                    && !require_all
+                    && closed_at.elapsed() < Duration::from_secs(5)
+                {
+                    break;
+                }
+                return Err(error)
+                    .context("Could not finalize recording segment; partial file preserved");
+            }
+            self.pending_closed.remove(0);
+            let start = self.opened.remove(&file).unwrap_or(0);
+            let end = running.max(start);
+            self.parts.push(json!({"file":final_path.file_name().unwrap().to_string_lossy(),"startSessionTicks":start.to_string(),"endSessionTicks":end.to_string(),"bytes":fs::metadata(&final_path)?.len().to_string(),"status":"finalized-and-flushed"}));
+            journal::atomic_json(&self.track.folder.join("segments.json"), &self.parts)?;
         }
         Ok(())
     }

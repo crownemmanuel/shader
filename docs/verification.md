@@ -1,10 +1,10 @@
 # Verification — 26 October 2026
 
-## Blackmagic zoom slider — included in 0.1.6
+## Blackmagic zoom slider — included in this release
 
 - Advanced Lens replaces the ATEM continuous zoom numeric box with a labeled spring-return slider. Corrected parameter 0.9 bounds to −1…+1 and added the shared `lens_zoom` command with a 600 ms keepalive timeout.
 - Six isolated engine tests cover normalized bounds, speed changes/keepalives, release/lock, shared-switcher disconnect, delayed acknowledgements and shutdown. The complete suite passes 71 tests with one Windows-only helper test skipped on macOS. TypeScript and Vite production build pass.
-- Browser checks use simulated ATEM cameras and cover both directions, keyboard release, pointer release outside, cancellation, lost focus, hidden windows, delayed replies, locking, switching tabs/cameras, errors and retry. Desktop and compact layouts were inspected. No physical camera movement or Windows hardware validation was performed; this change is included in 0.1.6.
+- Browser checks use simulated ATEM cameras and cover both directions, keyboard release, pointer release outside, cancellation, lost focus, hidden windows, delayed replies, locking, switching tabs/cameras, errors and retry. Desktop and compact layouts were inspected. No physical camera movement or Windows hardware validation was performed; this change is included in this release.
 
 - TypeScript check and Vite production build passed.
 - Rust check and Tauri macOS app bundling passed on Apple Silicon.
@@ -62,12 +62,12 @@ The production StageLight app was not modified or driven, and no physical camera
 - Frontend production build, packaged engine test and Tauri `cargo check` passed.
 - Windows-only WIC JPEG encode/decode self-test is wired into native builds and CI, but was not executed on this Mac. Actual Quad 2 capture, driver compatibility and sustained eight-input throughput remain pending on Windows.
 
-## Numbered presets and camera ordering — included in 0.1.6
+## Numbered presets and camera ordering — included in this release
 
 - Added regression tests for camera-scoped numbered recall, distinct values in multi-camera slots, merging saves without overwriting other cameras, group preflight and locks, stale revision rejection, failed batch-save preservation, slot names/membership across restart, old-library compatibility, and camera-order preservation across hidden/disconnected identities.
 - The complete local suite passes 63 tests; the Windows-only helper self-test is skipped on macOS. Production frontend and standalone engine builds pass.
 - Chrome interaction checks used simulated camera data and verified four permanent slots, grey empty slots per camera, single-camera recall, explicit group recall, add/rename slots, multi-camera saves, drag and keyboard reordering, unchanged camera colors, numeric preset shortcuts, order after reload, and desktop/narrow-window layouts. No production cameras were written during these checks.
-- Numbered presets and reordering are included in 0.1.6.
+- Numbered presets and reordering are included in this release.
 
 ## Unreleased Recorder Studio — 26 October 2026
 
@@ -85,4 +85,4 @@ The production StageLight app was not modified or driven, and no physical camera
 
 - Added the recorder runtime to both release targets. Windows downloads the official MSVC x64 GStreamer 1.28.8 installer with a pinned SHA-256. macOS stages and relocates 52 media binaries and their transitive libraries, with per-package licenses and build metadata.
 - The staged macOS runtime reports all required plugins, and passed synthetic ProRes/16-channel PCM recording, segment rollover, disk-space checks, StageMics authentication/clock/deduplication, recorder-service restart survival, input-worker crash isolation and recovery into a new playable MOV while retaining the original.
-- CI runs these checks against the staged recorder on both platforms before installer publication. The limited-scope 0.1.5 draft was cancelled when the user requested every change. The replacement is 0.1.6. Eight-input hardware qualification remains pending.
+- CI runs these checks against the staged recorder on both platforms before installer publication. The limited-scope 0.1.5 draft was cancelled when the user requested every change. Failed draft builds were superseded with fixes before publication. CI uses compact synthetic video to verify recording, markers and recovery without treating shared runners as a ProRes performance benchmark; local 1080p30 verification remains separate. Eight-input hardware qualification remains pending.

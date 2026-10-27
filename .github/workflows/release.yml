@@ -155,6 +155,9 @@ jobs:
         shell: bash
         env:
           SHADER_RECORDER: ${{ github.workspace }}/src-tauri/resources/recorder/shader-recorder${{ runner.os == 'Windows' && '.exe' || '' }}
+          # Functional fault/marker checks must not benchmark shared-runner
+          # ProRes capacity. Full 1080p and eight-input load are hardware gates.
+          SHADER_RECORDER_TEST_COMPACT: '1'
           SHADER_FFPROBE: ${{ runner.os == 'Windows' && format('{0}/.shader/build/ffprobe.exe', github.workspace) || 'ffprobe' }}
           SHADER_FFMPEG: ${{ github.workspace }}/src-tauri/binaries/ffmpeg-${{ runner.os == 'Windows' && 'x86_64-pc-windows-msvc.exe' || 'aarch64-apple-darwin' }}
         run: |
