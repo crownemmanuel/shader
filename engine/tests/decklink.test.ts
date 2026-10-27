@@ -199,7 +199,7 @@ test("format changes preserve leases and increasing sequence numbers, reject uns
     f.camera.sourceId = (await f.service.list()).sources[0].id;
     const lease = f.service.open(f.camera);
     await f.service.capture(f.camera);
-    const before = f.service.poll(f.camera, lease.leaseId);
+    const before = await f.service.poll(f.camera, lease.leaseId);
     await assert.rejects(
       f.service.setFormat(f.camera.sourceId, "xxxx"),
       /does not support/,

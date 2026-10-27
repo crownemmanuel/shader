@@ -1,3 +1,6 @@
+import { RecorderStudio } from "./recorder-studio";
+import { listen } from "@tauri-apps/api/event";
+import { isTauri } from "@tauri-apps/api/core";
 import { CaptureFormatSelect } from "./capture-format";
 /// <reference types="vite/client" />
 import React, { useEffect, useRef, useState } from "react";
@@ -96,6 +99,14 @@ function Modal({
 }
 function App() {
   const update = useUpdateChecks();
+  const [studio, setStudio] = useState(false);
+  useEffect(() => {
+    if (!isTauri()) return;
+    const unlisten = listen("recorder-needs-attention", () => setStudio(true));
+    return () => {
+      void unlisten.then((fn) => fn());
+    };
+  }, []);
   const [layout, setLayout] = useWorkspaceLayout();
   const [buttonStyles, setButtonStyles] = useCameraButtons();
   const [settingsTab, setSettingsTab] = useState<"general" | "inputs">(
@@ -251,6 +262,13 @@ function App() {
           <span className="version">Studio</span>
         </div>
         <div className="toolbar-actions">
+          <button aria-pressed={studio} onClick={() => setStudio(!studio)}>
+            <Video size={14} />
+            {studio ? "Return to shading" : "Recorder Studio"}
+            {status?.recorder?.active && (
+              <span style={{ color: "#ff7777" }}>●</span>
+            )}
+          </button>
           <WorkspaceLayoutMenu layout={layout} onChange={setLayout} />
           <button onClick={() => setModal("presets")}>
             <Bookmark size={14} />
@@ -304,14 +322,22 @@ function App() {
           </button>
         </div>
       </header>
-      <div className={`workspace ${showAssistant ? "with-assistant" : ""}`}>
+      <div
+        className={`workspace ${studio ? "recorder-workspace" : ""} ${showAssistant && !studio ? "with-assistant" : ""}`}
+      >
         <main className="console">
           {engineError && (
             <div className="banner error" role="alert">
               {engineError}
             </div>
           )}
-          {camera ? (
+          {studio ? (
+            <RecorderStudio
+              sources={status?.captureSources || []}
+              cameras={cameras}
+              refresh={refresh}
+            />
+          ) : camera ? (
             <>
               <div
                 className={`shading-workspace ${layout.controlsLeft ? "controls-left" : ""}`}
@@ -798,7 +824,7 @@ function App() {
             </div>
           )}
         </main>
-        {showAssistant && (
+        {showAssistant && !studio && (
           <div className="assistant-host" inert={previewExpanded}>
             <Assistant
               key={camera?.id}
@@ -1627,7 +1653,7 @@ function CaptureModal({
             />
             <Video size={20} />
             <span>
-              {s.name}
+              {s.alias || s.name}
               <small>
                 {s.backend === "decklink-sdk" ? "Blackmagic DeckLink" : s.kind}
                 {s.available === false ? " · unavailable" : ""}

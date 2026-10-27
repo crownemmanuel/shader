@@ -70,7 +70,13 @@ export async function startServer(engine: Engine, onShutdown?: () => void) {
       return;
     }
     if (req.method === "POST" && req.url === "/shutdown" && onShutdown) {
-      await engine.close();
+      try {
+        await engine.close();
+      } catch (e) {
+        res.writeHead(409);
+        res.end(JSON.stringify({ error: (e as Error).message }));
+        return;
+      }
       res.end(JSON.stringify({ ok: true }));
       setImmediate(onShutdown);
       return;

@@ -138,6 +138,26 @@ jobs:
       - name: Build and self-test native DeckLink capture
         run: npm run build:decklink
       - run: npm run fetch:ffmpeg
+      - name: Install pinned Windows recorder runtime and development files
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: ./native/recorder/install-windows.ps1
+      - name: Install macOS recorder build dependencies
+        if: runner.os == 'macOS'
+        run: brew install gstreamer pkg-config ffmpeg
+      - name: Build and verify bundled Recorder Studio
+        run: npm run build:recorder
+      - name: Recorder unit tests
+        run: cargo test --locked --manifest-path native/recorder/Cargo.toml
+      - name: Packaged recorder recording and crash-recovery tests
+        shell: bash
+        env:
+          SHADER_RECORDER: ${{ github.workspace }}/src-tauri/resources/recorder/shader-recorder${{ runner.os == 'Windows' && '.exe' || '' }}
+          SHADER_FFPROBE: ${{ runner.os == 'Windows' && format('{0}/.shader/build/ffprobe.exe', github.workspace) || 'ffprobe' }}
+          SHADER_FFMPEG: ${{ github.workspace }}/src-tauri/binaries/ffmpeg-${{ runner.os == 'Windows' && 'x86_64-pc-windows-msvc.exe' || 'aarch64-apple-darwin' }}
+        run: |
+          node native/recorder/tests/integration.mjs
+          node native/recorder/tests/recovery.mjs
       - run: npm run bundle:engine
       - run: npm run check
       - run: npm test

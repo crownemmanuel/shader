@@ -46,3 +46,9 @@ xattr -cr "/Applications/Shader.app"
 `npm run desktop:build` builds Sony locally and produces the `.app`, `.dmg`, `.app.tar.gz` and updater signature, requiring `TAURI_SIGNING_PRIVATE_KEY` in the build environment. For a local installer without updater artifacts, use `npm run build:installer`.
 
 The published release contains the Windows NSIS installer, Mac DMG installer, signed app update files, `.sig` files and `latest.json` covering both platforms. The app’s existing icon and MCP server are included in the release.
+
+## Recorder Studio packaging
+
+Release builds include the Rust recorder and private GStreamer libraries/plugins on Windows and macOS. Windows uses the official MSVC x64 1.28.8 installer pinned by SHA-256 in `native/recorder/install-windows.ps1`. macOS copies the plugin dependency closure from Homebrew, relocates every non-system Mach-O dependency, retains package licenses/SBOMs/build recipes, and signs the staged files. `RUNTIME.json` records the version. `NOTICE.txt` links upstream source and dependency recipes.
+
+CI checks the staged executable, performs synthetic ProRes/PCM recording with scene markers, and tests worker failure and recovery before packaging. These checks do not qualify a particular PC, disk, Desktop Video driver or eight-input DeckLink load. Recorder Studio is included as a preview pending that on-site qualification.

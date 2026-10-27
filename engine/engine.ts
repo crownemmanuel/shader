@@ -33,6 +33,7 @@ import {
   type PresetFrame,
   type RecallJob,
 } from "./presets.js";
+import { RecorderClient } from "./recorder.js";
 import { LookLink } from "./look-link.js";
 export const dataDirectory = () =>
   process.env.SHADER_DATA_DIR || path.join(os.homedir(), ".shader");
@@ -60,6 +61,7 @@ export class Engine extends EventEmitter {
   });
   private seenAdvertisements = new Set<string>();
   capture = new CaptureService();
+  recorder: RecorderClient;
   assistant = new AssistantService();
   presets = new PresetService(this);
   lighting = new LookLink(this);
@@ -86,6 +88,14 @@ export class Engine extends EventEmitter {
   changeVersion = 0;
   constructor(public directory = dataDirectory()) {
     super();
+    this.recorder = new RecorderClient(path.join(directory, "recorder"), () =>
+      this.emit("change"),
+    );
+    this.capture.external = {
+      owns: (id) => this.recorder.owns(id),
+      preview: (id, after) =>
+        this.recorder.call("preview", { sourceId: id, afterSequence: after }),
+    };
     this.setMaxListeners(100);
     this.on("change", () => this.changeVersion++);
   }
@@ -115,6 +125,7 @@ export class Engine extends EventEmitter {
           "Settings could not be loaded; using session defaults.",
         );
     }
+    await this.recorder.init();
     await this.presets.init();
     await this.lighting.init();
   }
@@ -755,6 +766,8 @@ export class Engine extends EventEmitter {
   }
   async assign(id: string, sourceId: string | null) {
     const c = this.camera(id);
+    if (this.recorder.cached.active && c.sourceId !== (sourceId || undefined))
+      throw new Error("Stop recording before changing camera mappings");
     if (sourceId && !this.capture.sources.has(sourceId))
       throw new Error("Unknown capture source");
     if (c.sourceId !== (sourceId || undefined)) this.capture.releaseCamera(id);
@@ -924,6 +937,7 @@ export class Engine extends EventEmitter {
     });
   }
   async close() {
+    await this.recorder.close();
     await Promise.allSettled(
       [
         ...new Set(

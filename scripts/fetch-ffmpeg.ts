@@ -155,6 +155,13 @@ async function fetchOne(triple: string, force: boolean): Promise<void> {
   }
   console.log(`  ${(zip.length / 1e6).toFixed(1)} MB, checksum verified`);
   const file = unzipEntry(zip, src.entry);
+  // The Windows release uses the matching probe only for packaged-recorder
+  // integration checks; it is not an additional installed app sidecar.
+  if (ext) {
+    const checks = join(root, ".shader/build");
+    mkdirSync(checks, { recursive: true });
+    writeFileSync(join(checks, "ffprobe.exe"), unzipEntry(zip, "ffprobe.exe"));
+  }
   rmSync(bin, { force: true });
   writeFileSync(bin, file);
   if (!ext) chmodSync(bin, 0o755);

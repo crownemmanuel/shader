@@ -123,11 +123,11 @@ test("preview and MCP capture share one input process, retain camera provenance 
     assert.equal(frame.cameraId, camera.id);
     assert.equal(frame.sourceId, "input1");
     assert.equal((await readFile(log, "utf8")).trim(), "start");
-    const preview = service.poll(camera, lease.leaseId);
+    const preview = await service.poll(camera, lease.leaseId);
     assert.equal(preview.status, "live");
     assert.equal(toMcpResult(preview).content.at(-1).type, "image");
     service.release(lease.leaseId);
-    assert.equal(service.poll(camera, second.leaseId).status, "live");
+    assert.equal((await service.poll(camera, second.leaseId)).status, "live");
     camera.sourceId = "input2";
     assert.throws(() => service.poll(camera, second.leaseId), /changed/);
     service.releaseCamera(camera.id);

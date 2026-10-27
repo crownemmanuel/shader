@@ -110,8 +110,12 @@ See `docs/architecture.md` and `docs/vendor-research.md` for the design and prim
 
 ## Lighting-linked camera looks
 
-**Presets** saves a camera look or a scene across several cameras, previews changes, recalls with a transition, and archives/restores looks. **Lighting** receives StageLight reports over HTTP or OSC, shows cue/zone context, and maps lighting cues to presets. StageLight can also recall a Shader preset directly by its published stable ID.
+**Presets** uses numbered slots, starting with 1–4. Each number can hold a separate look for each camera; click it to recall the selected camera, or explicitly apply it to all saved cameras. Save one or several cameras, name slots, and add more. Older named looks and scenes remain available in the manager. Camera buttons can be reordered in Edit mode. **Lighting** receives StageLight reports over HTTP or OSC, shows cue/zone context, and maps lighting cues to presets. StageLight can also recall a Shader preset directly by its published stable ID.
 
 The receiver and automatic recalls start disabled. Camera write locks remain in force. The assistant and MCP can inspect lighting context and save a new camera preset after a correction; no model runs or image uploads happen merely because a lighting report arrives.
 
 See [Look Link setup and supported behavior](docs/look-link.md).
+
+## Recorder Studio
+
+Recorder Studio adds a warm DeckLink multiview, input aliases/mapping, per-camera ProRes/PCM recording, a native recording-folder picker with live free-space estimates, and durable StageMics scene markers. Build the native runtime with `npm run build:recorder`. See [implementation and qualification](docs/recorder-studio-plan.md) and [marker receiver protocol](docs/recorder-marker-protocol.md). The release includes its private media runtime and automated synthetic recording/recovery checks. Eight-input Windows hardware still requires production qualification before live use.

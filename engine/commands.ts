@@ -1,3 +1,4 @@
+import { recorderCommands } from "./recorder-commands.js";
 import appPackage from "../package.json";
 import { z } from "zod";
 import { isSea } from "node:sea";
@@ -24,6 +25,7 @@ export interface Command {
 export function commands(engine: Engine) {
   const registry: Record<string, Command> = {
     ...lookCommands(engine),
+    ...recorderCommands(engine),
     system_status: {
       description:
         "Read engine status, provider configuration without secrets, integrations, and recent operations.",
@@ -50,6 +52,7 @@ export function commands(engine: Engine) {
         cameras: engine.list(),
         hiddenCameras: [...engine.hidden],
         switchers: [...engine.switchers.values()].map((s) => s.info()),
+        recorder: engine.recorder.cached,
         captureSources: [...engine.capture.sources.values()],
         exposurePolicies: engine.policies,
         provider: engine.assistant.settings(),

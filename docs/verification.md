@@ -1,5 +1,11 @@
 # Verification — 26 October 2026
 
+## Blackmagic zoom slider — included in 0.1.6
+
+- Advanced Lens replaces the ATEM continuous zoom numeric box with a labeled spring-return slider. Corrected parameter 0.9 bounds to −1…+1 and added the shared `lens_zoom` command with a 600 ms keepalive timeout.
+- Six isolated engine tests cover normalized bounds, speed changes/keepalives, release/lock, shared-switcher disconnect, delayed acknowledgements and shutdown. The complete suite passes 71 tests with one Windows-only helper test skipped on macOS. TypeScript and Vite production build pass.
+- Browser checks use simulated ATEM cameras and cover both directions, keyboard release, pointer release outside, cancellation, lost focus, hidden windows, delayed replies, locking, switching tabs/cameras, errors and retry. Desktop and compact layouts were inspected. No physical camera movement or Windows hardware validation was performed; this change is included in 0.1.6.
+
 - TypeScript check and Vite production build passed.
 - Rust check and Tauri macOS app bundling passed on Apple Silicon.
 - 16 automated tests passed with no skips: shared UI/MCP registry, stale and concurrent edits, live-write locks, vector validation, ATEM packet encoding (including exact 64-bit and UTF-8 values), real TCP VISCA framing, HTTP authentication/origin checks, credential redaction, capture mapping, scoped assistant tools with a local HTTP model fixture, real MCP stdio interoperability, packaged engine outside the repository, native Sony codec checks, and actual Sony SDK/plugin loading and discovery.
@@ -56,10 +62,27 @@ The production StageLight app was not modified or driven, and no physical camera
 - Frontend production build, packaged engine test and Tauri `cargo check` passed.
 - Windows-only WIC JPEG encode/decode self-test is wired into native builds and CI, but was not executed on this Mac. Actual Quad 2 capture, driver compatibility and sustained eight-input throughput remain pending on Windows.
 
-## Version 0.1.5 — zoom, numbered presets and camera ordering
+## Numbered presets and camera ordering — included in 0.1.6
 
-- Advanced Lens replaces the ATEM continuous zoom numeric box with a spring-return slider. Parameter 0.9 uses normalized −1…+1 speeds and a 600 ms keepalive timeout. Release, lock, lost focus, tab/camera changes, disconnect and shutdown send stop commands.
-- Six isolated zoom tests cover bounds, keepalives, release/lock, shared-switcher disconnect, delayed acknowledgements and shutdown. Numbered-preset tests cover per-camera/group recall, distinct camera values, merge saves, locks, stale state, persistence and camera order.
-- The isolated release frontend and standalone engine build pass. All 69 applicable engine tests pass; one Windows-only capture helper test is skipped on macOS and runs in release CI.
-- Chrome fixture checks cover zoom gestures, keyboard release, hidden windows, delayed replies, errors/retry, and desktop/compact layouts. Earlier fixture checks verified numbered slots, group recall, adding/renaming/saving slots, numeric shortcuts, drag/keyboard camera order and persistence. No physical camera writes were performed.
-- Recorder Studio remains in the development workspace and is excluded from this release pending runtime packaging and Windows hardware qualification.
+- Added regression tests for camera-scoped numbered recall, distinct values in multi-camera slots, merging saves without overwriting other cameras, group preflight and locks, stale revision rejection, failed batch-save preservation, slot names/membership across restart, old-library compatibility, and camera-order preservation across hidden/disconnected identities.
+- The complete local suite passes 63 tests; the Windows-only helper self-test is skipped on macOS. Production frontend and standalone engine builds pass.
+- Chrome interaction checks used simulated camera data and verified four permanent slots, grey empty slots per camera, single-camera recall, explicit group recall, add/rename slots, multi-camera saves, drag and keyboard reordering, unchanged camera colors, numeric preset shortcuts, order after reload, and desktop/narrow-window layouts. No production cameras were written during these checks.
+- Numbered presets and reordering are included in 0.1.6.
+
+## Unreleased Recorder Studio — 26 October 2026
+
+- Implemented the Rust supervisor/independent capture workers, GStreamer ProRes/PCM segments, warm preview sharing, native folder-picker command, actual free/total space, estimated remaining time, input naming/mapping, selective recording, StageMics HTTP receiver, marker sidecars, and interrupted-part recovery. Earlier numbered-preset and camera-reorder work is preserved.
+- Engine suite: **65 passed, one Windows-only helper test skipped** on macOS. New tests cover shared recorder preview ownership, fresh snapshot provenance, guarded format/name changes, alias persistence, pairing-key access and update blocking.
+- Six Rust tests pass for durable marker replay/conflicts, journal corruption/torn-tail handling, scene intervals, already-live scenes and unresolved clock/audio validation. Rust Clippy passes with warnings denied.
+- Real synthetic 1080p30 recordings pass: ProRes LT video and **16 embedded PCM channels**, playable segment rollover, actual storage queries, shutdown refusal during recording, StageMics authentication/probe/201/duplicate/conflict handling, supervisor process kill/reconnection, and delayed scene exits on the original completed take. All timestamps and audio anchors remain in sidecars.
+- A separate **two-input** test kills one capture worker after a readable MOV checkpoint. The healthy input continues, the take is marked partial, and recovery creates a new playable 48-frame MOV while preserving the original `.partial`. The test also verifies that a dead input can be released. Both tests pass against the optimized local recorder executable. These tests simulate process failure; they do not prove power-loss durability.
+- Eighteen Chrome checks pass against the actual React UI with isolated fixtures: eight-input multiview/table, native picker invocation through a mocked Tauri boundary, visible path/free space, five-second disk updates, input renaming/mapping, selected-camera Record/Stop, markers, disabled destination changes during recording, return to shading with recording preserved, and narrow-window layout. No browser errors. The native picker implementation compiles with Tauri; the Windows OS picker itself has not been exercised on this Mac.
+- TypeScript/frontend production build, Tauri `cargo check`, optimized recorder build/staging and Windows native DeckLink helper cross-compilation pass. The full recorder Rust code also passes Windows target type-checking with `DOCS_RS=1` to skip linking native GStreamer libraries; **this is not a Windows executable/runtime test**.
+- Local media runtime: GStreamer 1.28.8. Windows GStreamer packaging requires the documented MSVC runtime/development installation and build step. Clean Windows installer/dependency testing, actual Quad 2 inputs, eight-stream sustained recording, physical timing/synchronization, power removal, and multi-editor import are still pending. See [qualification plan](recorder-studio-plan.md).
+- No release, tag, push, camera writes or live dLive/StageLight commands were performed for this recorder work.
+
+## All-changes release packaging
+
+- Added the recorder runtime to both release targets. Windows downloads the official MSVC x64 GStreamer 1.28.8 installer with a pinned SHA-256. macOS stages and relocates 52 media binaries and their transitive libraries, with per-package licenses and build metadata.
+- The staged macOS runtime reports all required plugins, and passed synthetic ProRes/16-channel PCM recording, segment rollover, disk-space checks, StageMics authentication/clock/deduplication, recorder-service restart survival, input-worker crash isolation and recovery into a new playable MOV while retaining the original.
+- CI runs these checks against the staged recorder on both platforms before installer publication. The limited-scope 0.1.5 draft was cancelled when the user requested every change. The replacement is 0.1.6. Eight-input hardware qualification remains pending.

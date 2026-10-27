@@ -69,6 +69,10 @@ export interface Discovery {
   note?: string;
 }
 export interface CaptureSource {
+  alias?: string;
+  cardId?: string;
+  recorderMode?: "1080p30" | "1080p2997";
+  audioChannels?: 2 | 8 | 16;
   id: string;
   name: string;
   // rtsp sources are derived from a connected camera's address, never registered by hand.
@@ -83,7 +87,13 @@ export interface CaptureSource {
   subdeviceIndex?: number;
   profile?: string;
   supportsAutoDetection?: boolean;
-  modes?: { code: string; name: string; width: number; height: number; fps: number }[];
+  modes?: {
+    code: string;
+    name: string;
+    width: number;
+    height: number;
+    fps: number;
+  }[];
 }
 export interface Frame {
   id: string;

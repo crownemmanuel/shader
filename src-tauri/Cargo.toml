@@ -14,3 +14,5 @@ dirs = "6"
 
 tauri-plugin-updater = "2"
 tauri-plugin-process = "2"
+
+tauri-plugin-dialog = "2"

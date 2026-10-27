@@ -117,6 +117,18 @@ function stopStream(stream: CaptureStream): Promise<void> {
   }));
 }
 export class CaptureService {
+  external?: {
+    owns: (id: string) => boolean;
+    preview: (id: string, after: number) => Promise<any>;
+  };
+  async suspendSource(id: string) {
+    const stream = this.streams.get(id);
+    if (stream) {
+      stream.restarting = true;
+      await stopStream(stream);
+      this.streams.delete(id);
+    }
+  }
   sources = new Map<string, CaptureSource>();
   frames = new Map<string, Frame>();
   private streams = new Map<string, CaptureStream>();
@@ -261,6 +273,8 @@ export class CaptureService {
     };
   }
   register(source: CaptureSource) {
+    if (this.external?.owns(source.id))
+      throw new Error("Stop monitoring this input before registering it again");
     if (source.kind === "rtsp")
       throw new Error("Network streams come only from connected cameras");
     if (
@@ -309,7 +323,8 @@ export class CaptureService {
       throw new Error(
         "This DeckLink input is unavailable. Find video inputs again and check Desktop Video Setup.",
       );
-    if (!this.streams.has(source.id)) this.startStream(source);
+    if (!this.external?.owns(source.id) && !this.streams.has(source.id))
+      this.startStream(source);
     const leaseId = randomUUID();
     this.leases.set(leaseId, {
       cameraId: camera.id,
@@ -375,6 +390,10 @@ export class CaptureService {
     });
   }
   async setFormat(sourceId: string, format?: string) {
+    if (this.external?.owns(sourceId))
+      throw new Error(
+        "Stop monitoring this input in Recorder Studio before changing format",
+      );
     const source = this.sources.get(sourceId);
     if (!source || source.kind !== "decklink")
       throw new Error("Select a DeckLink input first.");
@@ -419,6 +438,25 @@ export class CaptureService {
         "Preview expired or camera input changed. Reopen preview.",
       );
     l.until = Date.now() + 15000;
+    if (this.external?.owns(l.sourceId))
+      return this.external
+        .preview(l.sourceId, after)
+        .then((p) => ({
+          sequence: p.sequence,
+          status: p.status,
+          frame: p.data
+            ? this.frame(
+                camera,
+                {
+                  data: Buffer.from(p.data, "base64"),
+                  at: new Date(Number(p.capturedAt)).toISOString(),
+                },
+                false,
+              )
+            : undefined,
+        }));
+    if (!this.streams.has(l.sourceId))
+      this.startStream(this.sources.get(l.sourceId)!);
     const s = this.streams.get(l.sourceId)!;
     if (s.error) throw new Error(s.error);
     const fresh = s.latest && Date.now() - Date.parse(s.latest.at) < 2500;
@@ -471,6 +509,7 @@ export class CaptureService {
             const source = this.sources.get(lease.sourceId);
             if (
               source &&
+              !this.external?.owns(source.id) &&
               [...this.leases.values()].some(
                 (l) => l.sourceId === lease.sourceId,
               )
@@ -493,11 +532,13 @@ export class CaptureService {
     const source = camera.sourceId && this.sources.get(camera.sourceId);
     if (source && source.kind === "rtsp") return this.still(camera, source);
     const lease = this.open(camera),
-      start = this.streams.get(lease.sourceId)!.sequence,
+      start = this.external?.owns(lease.sourceId)
+        ? (await this.external.preview(lease.sourceId, 0)).sequence
+        : this.streams.get(lease.sourceId)!.sequence,
       deadline = Date.now() + 10000;
     try {
       while (Date.now() < deadline) {
-        const result = this.poll(camera, lease.leaseId, start);
+        const result = await this.poll(camera, lease.leaseId, start);
         if (result.frame) {
           this.frames.set(result.frame.id, result.frame);
           while (this.frames.size > 20)

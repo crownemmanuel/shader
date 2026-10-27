@@ -299,8 +299,8 @@ function MappingRow({
           {sources.map((s) => (
             <option key={s.id} value={s.id} disabled={s.available === false}>
               {s.connector
-                ? `SDI ${s.connector} · ${s.nativeName || s.name}`
-                : s.name}
+                ? `${s.alias || s.nativeName || s.name} · SDI ${s.connector}`
+                : s.alias || s.name}
               {s.available === false ? " · unavailable" : ""}
             </option>
           ))}

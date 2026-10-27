@@ -74,6 +74,7 @@ const responseSchema = z.object({
         connector: z.number().int().min(1).max(8).optional(),
         subdeviceIndex: z.number().int().nonnegative().optional(),
         profile: z.string().max(4).optional(),
+        cardId: z.string().max(40).optional(),
       }),
     )
     .max(128),

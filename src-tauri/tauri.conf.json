@@ -4,9 +4,9 @@
   "version": "../package.json",
   "identifier": "studio.shader.desktop",
   "build": {
-    "beforeDevCommand": "npm run build:decklink && npm run fetch:ffmpeg && npm run bundle:engine && npm run dev",
+    "beforeDevCommand": "node native/recorder/stage.mjs && npm run build:decklink && npm run fetch:ffmpeg && npm run bundle:engine && npm run dev",
     "devUrl": "http://127.0.0.1:1420",
-    "beforeBuildCommand": "node native/decklink/build.mjs && node scripts/fetch-ffmpeg.ts && npm run build",
+    "beforeBuildCommand": "node native/recorder/stage.mjs && node native/decklink/build.mjs && node scripts/fetch-ffmpeg.ts && npm run build",
     "frontendDist": "../dist"
   },
   "app": {
@@ -45,7 +45,8 @@
     "resources": {
       "resources/sony/": "sony/",
       "../scripts/FFMPEG-NOTICE.txt": "FFMPEG-NOTICE.txt",
-      "resources/decklink/": "decklink/"
+      "resources/decklink/": "decklink/",
+      "resources/recorder/": "recorder/"
     },
     "createUpdaterArtifacts": true
   },

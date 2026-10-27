@@ -3,7 +3,8 @@ use std::sync::{
     atomic::{AtomicBool, Ordering},
     Mutex,
 };
-use tauri::Manager;
+use tauri::{Emitter, Manager};
+use tauri_plugin_dialog::DialogExt;
 use tauri_plugin_shell::{
     process::{CommandChild, CommandEvent},
     ShellExt,
@@ -66,10 +67,36 @@ async fn camera_command(
     }
     Ok(value["result"].clone())
 }
+#[tauri::command]
+async fn choose_recording_directory(
+    app: tauri::AppHandle,
+    current: Option<String>,
+) -> Result<Option<String>, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        let mut picker = app.dialog().file().set_title("Choose recording folder");
+        if let Some(path) = current.filter(|p| std::path::Path::new(p).is_dir()) {
+            picker = picker.set_directory(path);
+        }
+        picker
+            .blocking_pick_folder()
+            .map(|f| {
+                f.into_path()
+                    .map(|p| p.to_string_lossy().into_owned())
+                    .map_err(|e| e.to_string())
+            })
+            .transpose()
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
 // The Windows updater exits directly after starting NSIS, so stop the owned engine first.
 #[tauri::command]
 async fn prepare_update_restart(app: tauri::AppHandle) -> Result<(), String> {
     let status = camera_command("system_status".into(), serde_json::json!({})).await?;
+    if !status["recorder"]["active"].is_null() {
+        return Err("Stop and finalize the recording before installing an update".into());
+    }
     let cameras = status["cameras"]
         .as_array()
         .ok_or("Camera state unavailable")?;
@@ -131,6 +158,7 @@ async fn prepare_update_restart(app: tauri::AppHandle) -> Result<(), String> {
 fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
+        .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_process::init())
         .manage(EngineChild {
@@ -177,7 +205,11 @@ fn main() {
             let decklink_bridge = if cfg!(target_os = "windows") {
                 std::env::var_os("SHADER_DECKLINK_BRIDGE")
                     .map(std::path::PathBuf::from)
-                    .unwrap_or(app.path().resource_dir()?.join("decklink/shader-decklink.exe"))
+                    .unwrap_or(
+                        app.path()
+                            .resource_dir()?
+                            .join("decklink/shader-decklink.exe"),
+                    )
             } else {
                 std::path::PathBuf::new()
             };
@@ -209,6 +241,18 @@ fn main() {
                         )),
                 )
                 .env("SHADER_DECKLINK_BRIDGE", decklink_bridge)
+                .env(
+                    "SHADER_RECORDER",
+                    std::env::var_os("SHADER_RECORDER")
+                        .map(std::path::PathBuf::from)
+                        .unwrap_or(app.path().resource_dir()?.join(
+                            if cfg!(target_os = "windows") {
+                                "recorder/shader-recorder.exe"
+                            } else {
+                                "recorder/shader-recorder"
+                            },
+                        )),
+                )
                 .spawn()?;
             *app.state::<EngineChild>().child.lock().unwrap() = Some(child);
             let handle = app.handle().clone();
@@ -242,7 +286,8 @@ fn main() {
         })
         .invoke_handler(tauri::generate_handler![
             camera_command,
-            prepare_update_restart
+            prepare_update_restart,
+            choose_recording_directory
         ])
         .build(tauri::generate_context!())
         .expect("Could not launch Shader")
@@ -276,11 +321,30 @@ fn main() {
                                 .no_proxy()
                                 .build()
                             {
-                                let _ = client
+                                let result = client
                                     .post(format!("{}/shutdown", s.url))
                                     .bearer_auth(s.token)
                                     .send()
                                     .await;
+                                if result
+                                    .as_ref()
+                                    .map(|r| !r.status().is_success())
+                                    .unwrap_or(true)
+                                {
+                                    handle
+                                        .state::<EngineChild>()
+                                        .exiting
+                                        .store(false, Ordering::SeqCst);
+                                    if let Some(window) = handle.get_webview_window("main") {
+                                        let _ = window.show();
+                                        let _ = window.set_focus();
+                                    }
+                                    let _ = handle.emit(
+                                        "recorder-needs-attention",
+                                        "Stop and finalize recording before quitting",
+                                    );
+                                    return;
+                                }
                             }
                         }
                         // Wait for the engine to remove its descriptor and release the singleton

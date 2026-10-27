@@ -139,6 +139,8 @@ json discover() {
             std::string model = deviceName(device.get(), true), name = deviceName(device.get());
             json source = {{"device", identity(attrs.get())}, {"name", name}, {"nativeName", name}, {"model", model},
                 {"supportsAutoDetection", autoDetection(attrs.get())}, {"modes", modes(input.get())}};
+            auto group = attribute(attrs.get(), BMDDeckLinkDeviceGroupID);
+            if (group) source["cardId"] = std::to_string(*group);
             auto sub = attribute(attrs.get(), BMDDeckLinkSubDeviceIndex);
             if (sub) source["subdeviceIndex"] = *sub;
             if (model == "DeckLink Quad 2" && sub && *sub >= 0 && *sub < 8) {
