@@ -51,6 +51,7 @@ import {
 } from "./visual-controls";
 import { RoutingSettings } from "./routing-settings";
 import { CameraInputsSettings } from "./camera-inputs";
+import { PresetStrip } from "./preset-strip";
 import { axes } from "../engine/shading";
 import { PresetLibrary } from "./preset-library";
 import { LightingPanel } from "./lighting-panel";
@@ -138,8 +139,7 @@ function App() {
       buttonStyles[selected],
       cameras[cameraIndex]?.name,
     ),
-    writesOpen =
-      !!camera && (camera.vendor === "demo" || !camera.locked),
+    writesOpen = !!camera && (camera.vendor === "demo" || !camera.locked),
     frame =
       frames[selected]?.sourceId === camera?.sourceId
         ? frames[selected]
@@ -156,8 +156,8 @@ function App() {
       setSelected((s) =>
         data.cameras.some((c: Cam) => c.id === s && !c.hidden)
           ? s
-          : (data.cameras.find((c: Cam) => !c.hidden) || data.cameras[0])
-              ?.id || "",
+          : (data.cameras.find((c: Cam) => !c.hidden) || data.cameras[0])?.id ||
+            "",
       );
       setEngineError("");
     } catch (e) {
@@ -289,7 +289,14 @@ function App() {
             onClick={() => setModal("settings")}
           >
             <Settings size={17} />
-            {update.version && <span aria-hidden="true" style={{ color: "var(--accent, #ecc38b)", fontSize: 10 }}>↑</span>}
+            {update.version && (
+              <span
+                aria-hidden="true"
+                style={{ color: "var(--accent, #ecc38b)", fontSize: 10 }}
+              >
+                ↑
+              </span>
+            )}
           </button>
         </div>
       </header>
@@ -332,11 +339,13 @@ function App() {
                             value={selected}
                             onChange={(e) => setSelected(e.target.value)}
                           >
-                            {cameras.filter((c) => !c.hidden).map((c) => (
-                              <option key={c.id} value={c.id}>
-                                {c.name}
-                              </option>
-                            ))}
+                            {cameras
+                              .filter((c) => !c.hidden)
+                              .map((c) => (
+                                <option key={c.id} value={c.id}>
+                                  {c.name}
+                                </option>
+                              ))}
                           </select>
                           <button
                             className="icon"
@@ -390,35 +399,47 @@ function App() {
                   }
                   footer={
                     layout.showCameras && (
-                      <CameraBank
-                        cameras={cameras}
-                        selected={selected}
-                        onSelect={setSelected}
-                        onAdd={() => setModal("connect")}
-                        inert={previewExpanded}
-                        styles={buttonStyles}
-                        onStyle={(id, style) =>
-                          setButtonStyles((all) => {
-                            const next = { ...all };
-                            if (style) next[id] = style;
-                            else delete next[id];
-                            return next;
-                          })
-                        }
-                        onHide={(id) =>
-                          safe(
-                            perform(
-                              "cameras_hide",
-                              { cameraIds: [id], hidden: true },
-                              "Camera hidden. Show it again in Settings › Camera inputs.",
-                            ),
-                          )
-                        }
-                        onManageHidden={() => {
-                          setSettingsTab("inputs");
-                          setModal("settings");
-                        }}
-                      />
+                      <>
+                        <PresetStrip
+                          key={camera.id}
+                          cameraId={camera.id}
+                          presets={status?.presets || []}
+                          jobs={status?.presetJobs || []}
+                          perform={perform}
+                          notify={setNotice}
+                          onManage={() => setModal("presets")}
+                          disabled={!writesOpen}
+                        />
+                        <CameraBank
+                          cameras={cameras}
+                          selected={selected}
+                          onSelect={setSelected}
+                          onAdd={() => setModal("connect")}
+                          inert={previewExpanded}
+                          styles={buttonStyles}
+                          onStyle={(id, style) =>
+                            setButtonStyles((all) => {
+                              const next = { ...all };
+                              if (style) next[id] = style;
+                              else delete next[id];
+                              return next;
+                            })
+                          }
+                          onHide={(id) =>
+                            safe(
+                              perform(
+                                "cameras_hide",
+                                { cameraIds: [id], hidden: true },
+                                "Camera hidden. Show it again in Settings › Camera inputs.",
+                              ),
+                            )
+                          }
+                          onManageHidden={() => {
+                            setSettingsTab("inputs");
+                            setModal("settings");
+                          }}
+                        />
+                      </>
                     )
                   }
                 >
@@ -527,10 +548,14 @@ function App() {
                           className={showHints ? "icon active" : "icon"}
                           aria-pressed={showHints}
                           aria-label={
-                            showHints ? "Hide explanations" : "Show explanations"
+                            showHints
+                              ? "Hide explanations"
+                              : "Show explanations"
                           }
                           title={
-                            showHints ? "Hide explanations" : "Show explanations"
+                            showHints
+                              ? "Hide explanations"
+                              : "Show explanations"
                           }
                           onClick={() => setShowHints(!showHints)}
                         >
@@ -576,10 +601,7 @@ function App() {
                       <SimpleControls
                         key={`simple:${camera.id}`}
                         camera={camera}
-                        disabled={
-                          !!busy ||
-                          !writesOpen
-                        }
+                        disabled={!!busy || !writesOpen}
                         perform={perform}
                         advanced={() => {
                           setMode("advanced");
@@ -616,9 +638,7 @@ function App() {
                           )
                           .flatMap((c) => {
                             const disabled =
-                              !!busy ||
-                              !writesOpen ||
-                              !c.writable;
+                              !!busy || !writesOpen || !c.writable;
                             // Sent straight to the engine (not perform) so the
                             // shared busy state never disables a control mid-drag.
                             const onSet = (value: unknown, live: boolean) =>
@@ -1506,12 +1526,23 @@ function CaptureModal({
             <Video size={20} />
             <span>
               {s.name}
-              <small>{s.backend === "decklink-sdk" ? "Blackmagic DeckLink" : s.kind}{s.available === false ? " · unavailable" : ""}</small>
+              <small>
+                {s.backend === "decklink-sdk" ? "Blackmagic DeckLink" : s.kind}
+                {s.available === false ? " · unavailable" : ""}
+              </small>
             </span>
           </label>
         ))}
-        <CaptureFormatSelect key={selected} source={sources.find((s) => s.id === selected)} perform={perform}
-          onChange={(source) => setSources((items) => items.map((s) => s.id === source.id ? source : s))} />
+        <CaptureFormatSelect
+          key={selected}
+          source={sources.find((s) => s.id === selected)}
+          perform={perform}
+          onChange={(source) =>
+            setSources((items) =>
+              items.map((s) => (s.id === source.id ? source : s)),
+            )
+          }
+        />
         {diagnostics.map((d) => (
           <p className="form-note" key={d}>
             {d}
